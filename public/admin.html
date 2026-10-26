@@ -53,6 +53,9 @@
         <button id="btn-open-install-guide" class="btn-secondary" style="background:rgba(56,189,248,0.15); border-color:rgba(56,189,248,0.4); color:#38bdf8; display:flex; align-items:center; gap:6px;" title="Ver opciones para Android y Apple iPhone">
           <span class="icon">📱</span><span class="btn-label">Android / iOS</span>
         </button>
+        <button id="btn-admin-locate" class="btn-secondary" style="background:rgba(59,130,246,0.18); border-color:rgba(59,130,246,0.45); color:#60a5fa;" title="Ubicar mi posición actual de Administrador y medir distancia al cliente">
+          <span class="icon">📍</span><span class="btn-label">Mi Ubicación</span>
+        </button>
         <button id="btn-fit-all" class="btn-secondary" title="Centrar todos los clientes">
           <span class="icon">🎯</span><span class="btn-label">Centrar</span>
         </button>
@@ -133,12 +136,21 @@
         <!-- Floating Map Controls -->
         <div class="map-overlay-controls">
           <div class="map-layer-switcher">
-            <button class="layer-btn active" data-layer="osm" title="Mapa Estándar">🗺️ Callejero</button>
-            <button class="layer-btn" data-layer="dark" title="Vista Oscura">🌙 Oscuro</button>
-            <button class="layer-btn" data-layer="satellite" title="Satélite">🛰️ Satélite</button>
+            <button class="layer-btn active" data-layer="google" title="Google Calles (Alta Calidad)">🗺️ Google Calles</button>
+            <button class="layer-btn" data-layer="satellite" title="Google Satélite con Nombres de Calles">🛰️ Google Satelital</button>
+            <button class="layer-btn" data-layer="traffic" title="Google Tráfico en Tiempo Real">🚦 Tráfico</button>
+            <button class="layer-btn" data-layer="osm" title="OpenStreetMap Estándar">🌐 OSM</button>
           </div>
           <div class="map-telemetry-badge" id="telemetry-badge">
             <span id="telemetry-text">Selecciona un cliente para ver detalles</span>
+            <div id="telemetry-actions" style="display:none; margin-top:8px; gap:8px;">
+              <a id="btn-open-gmaps" href="#" target="_blank" class="btn-primary" style="padding:4px 10px; font-size:0.75rem; text-decoration:none; background:#0284c7; display:inline-flex; align-items:center; gap:4px; font-weight:700;">
+                🚗 Navegar en Google Maps
+              </a>
+              <a id="btn-open-streetview" href="#" target="_blank" class="btn-secondary" style="padding:4px 10px; font-size:0.75rem; text-decoration:none; display:inline-flex; align-items:center; gap:4px; color:#fbbf24; border-color:rgba(245,158,11,0.4); background:rgba(245,158,11,0.15); font-weight:700;">
+                🚶 Google Street View
+              </a>
+            </div>
           </div>
         </div>
       </main>
@@ -312,8 +324,16 @@
           </div>
         </div>
 
-        <!-- Lista de Geocercas Activas -->
-        <h4 style="margin-bottom: 10px; color: var(--text-primary); font-size: 0.95rem;">Geocercas Guardadas</h4>
+        <!-- Filtro y Lista de Geocercas Activas -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h4 style="color: var(--text-primary); font-size: 0.95rem; margin:0;">Geocercas Guardadas</h4>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label style="font-size:0.75rem; color:#94a3b8;">Ver:</label>
+            <select id="fence-filter-client" style="background:var(--bg-secondary); border:1px solid var(--border-color); color:#38bdf8; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:700;">
+              <option value="">🌐 Todas las Geocercas</option>
+            </select>
+          </div>
+        </div>
         <div id="geofences-list-container" style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
           <!-- Items generados dinámicamente -->
         </div>

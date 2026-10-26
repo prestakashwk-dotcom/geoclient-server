@@ -1,7 +1,7 @@
 // admin.js - Lógica del Panel de Control de Clientes en Tiempo Real (v2 con Geocercas y 60 Días)
 let map;
 let tileLayers = {};
-let currentLayer = 'osm';
+let currentLayer = 'google';
 let clientsMap = new Map();
 let markersMap = new Map();
 let trailsMap = new Map();
@@ -15,6 +15,11 @@ let soundEnabled = true;
 let currentFilter = 'all';
 let searchQuery = '';
 let serverInfo = null;
+
+// Variables de ubicación del Administrador
+let adminLocation = null; // { lat, lng, accuracy }
+let adminMarker = null;
+let adminToClientPolyline = null;
 
 // Audio context para sonido sutil de ping radar
 let audioCtx = null;
@@ -82,26 +87,39 @@ function initMap() {
 
   L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-  // Capas de mapas de alto rendimiento (sin bloqueos de OpenStreetMap)
-  tileLayers.osm = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    maxZoom: 20,
-    subdomains: 'abcd',
-    attribution: '&copy; CartoDB &copy; OpenStreetMap contributors'
+  // Capas oficiales de Google Maps (Ultra-nítidas, sin bloqueos y con nombres de calles)
+  tileLayers.google = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    maxZoom: 21,
+    subdomains: ['0', '1', '2', '3'],
+    attribution: '&copy; Google Maps'
   }).addTo(map);
 
-  tileLayers.dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 20,
-    subdomains: 'abcd',
-    attribution: '&copy; CartoDB &copy; OpenStreetMap contributors'
+  tileLayers.satellite = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    maxZoom: 21,
+    subdomains: ['0', '1', '2', '3'],
+    attribution: '&copy; Google Maps Satélite Híbrido'
   });
 
-  tileLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  tileLayers.traffic = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', {
+    maxZoom: 21,
+    subdomains: ['0', '1', '2', '3'],
+    attribution: '&copy; Google Maps Tráfico en Vivo'
+  });
+
+  tileLayers.osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '&copy; Esri &copy; Earthstar Geographics'
+    subdomains: ['a', 'b', 'c'],
+    attribution: '&copy; OpenStreetMap'
   });
 
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition((pos) => {
+      adminLocation = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy
+      };
+      updateAdminMarker();
       if (markersMap.size === 0) {
         map.setView([pos.coords.latitude, pos.coords.longitude], 13);
       }
@@ -111,20 +129,213 @@ function initMap() {
 
 // Cambiar capa del mapa
 function switchLayer(layerKey) {
-  const mapElement = document.getElementById('map');
   if (tileLayers[currentLayer]) map.removeLayer(tileLayers[currentLayer]);
-  tileLayers[layerKey].addTo(map);
-  currentLayer = layerKey;
-
-  if (layerKey === 'dark') {
-    mapElement.classList.add('dark-tiles');
-  } else {
-    mapElement.classList.remove('dark-tiles');
+  if (tileLayers[layerKey]) {
+    tileLayers[layerKey].addTo(map);
+    currentLayer = layerKey;
   }
 
   document.querySelectorAll('.layer-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.layer === layerKey);
   });
+}
+
+// ================= UBICACIÓN DEL ADMINISTRADOR Y DISTANCIA AL CLIENTE =================
+// Solicitar geolocalización GPS de alta precisión para el Admin
+function locateAdmin() {
+  if (!navigator.geolocation) {
+    showAdminToast('Tu navegador no soporta geolocalización GPS', false);
+    return;
+  }
+
+  showAdminToast('🛰️ Obteniendo tu ubicación GPS de Administrador...', true);
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      adminLocation = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy
+      };
+
+      updateAdminMarker();
+
+      // Si hay un cliente seleccionado o aislado, actualizar la distancia y trazar línea
+      const activeCid = isolatedClientId || selectedClientId;
+      if (activeCid && clientsMap.has(activeCid)) {
+        const client = clientsMap.get(activeCid);
+        updateAdminDistanceToClient(client);
+
+        // Ajustar mapa para ver a ambos (Admin y Cliente)
+        if (client.latitude && client.longitude) {
+          const bounds = L.latLngBounds([
+            [adminLocation.lat, adminLocation.lng],
+            [Number(client.latitude), Number(client.longitude)]
+          ]);
+          map.fitBounds(bounds, { padding: [70, 70], maxZoom: 17 });
+        }
+      } else {
+        map.setView([adminLocation.lat, adminLocation.lng], 16, { animate: true });
+        if (adminMarker) adminMarker.openPopup();
+      }
+
+      showAdminToast('📍 ¡Tu ubicación de Administrador fue fijada en el mapa!', true);
+    },
+    (err) => {
+      let errMsg = 'No se pudo obtener tu ubicación.';
+      if (err.code === 1) errMsg = 'Permiso de ubicación denegado en tu navegador.';
+      else if (err.code === 2) errMsg = 'Señal GPS no disponible.';
+      else if (err.code === 3) errMsg = 'Tiempo de espera agotado al buscar GPS.';
+      showAdminToast('⚠️ ' + errMsg, false);
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
+  );
+}
+
+// Dibujar o actualizar marcador del Admin en el mapa
+function updateAdminMarker() {
+  if (!adminLocation || !map) return;
+
+  const lat = adminLocation.lat;
+  const lng = adminLocation.lng;
+
+  const iconHtml = `
+    <div class="radar-marker selected" id="radar-marker-admin">
+      <div class="marker-pulse-ring ring-blue"></div>
+      <div class="marker-bubble bubble-blue">👑</div>
+      <div class="marker-label selected" style="color:#60a5fa; border-color:rgba(59,130,246,0.6); background:rgba(15,23,42,0.95); font-weight:800;">
+        📍 Tú (Admin)
+      </div>
+    </div>
+  `;
+
+  const customIcon = L.divIcon({
+    html: iconHtml,
+    className: 'custom-radar-icon',
+    iconSize: [44, 44],
+    iconAnchor: [22, 22]
+  });
+
+  const popupContent = `
+    <div class="marker-popup">
+      <h4 style="color:#60a5fa;">👑 Tu Ubicación (Administrador)</h4>
+      <p style="font-size:12px; color:#cbd5e1; margin-top:4px;">
+        Latitud: <strong>${lat.toFixed(5)}</strong><br>
+        Longitud: <strong>${lng.toFixed(5)}</strong><br>
+        Precisión GPS: <strong>±${Math.round(adminLocation.accuracy)} metros</strong>
+      </p>
+    </div>
+  `;
+
+  if (adminMarker) {
+    adminMarker.setLatLng([lat, lng]);
+    adminMarker.setIcon(customIcon);
+    adminMarker.setPopupContent(popupContent);
+  } else {
+    adminMarker = L.marker([lat, lng], {
+      icon: customIcon,
+      zIndexOffset: 12000
+    }).addTo(map);
+    adminMarker.bindPopup(popupContent);
+  }
+}
+
+// Fórmula de Haversine para cálculo de distancia geodésica exacta en km
+function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radio de la Tierra en km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// Medir distancia entre Admin y Cliente seleccionado, dibujar ruta recta y configurar Google Maps & Street View
+function updateAdminDistanceToClient(client) {
+  if (!client || !client.latitude || !client.longitude) {
+    if (adminToClientPolyline) {
+      map.removeLayer(adminToClientPolyline);
+      adminToClientPolyline = null;
+    }
+    const actions = document.getElementById('telemetry-actions');
+    if (actions) actions.style.display = 'none';
+    return;
+  }
+
+  const cLat = Number(client.latitude);
+  const cLng = Number(client.longitude);
+
+  // Botón de Google Street View (Stick / Pegman panorámico 360°)
+  const btnStreetView = document.getElementById('btn-open-streetview');
+  if (btnStreetView) {
+    btnStreetView.href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${cLat},${cLng}`;
+  }
+
+  const btnGmaps = document.getElementById('btn-open-gmaps');
+  const actions = document.getElementById('telemetry-actions');
+  if (actions) actions.style.display = 'flex';
+
+  if (adminLocation) {
+    const aLat = adminLocation.lat;
+    const aLng = adminLocation.lng;
+    const distKm = calculateHaversineDistance(aLat, aLng, cLat, cLng);
+
+    let distText = '';
+    if (distKm < 1) {
+      distText = `${Math.round(distKm * 1000)} metros`;
+    } else {
+      distText = `${distKm.toFixed(2)} km`;
+    }
+
+    // Tiempos estimados (auto a ~30km/h ciudad, a pie a ~4.5km/h)
+    const driveMinutes = Math.max(1, Math.round((distKm / 30) * 60));
+    const walkMinutes = Math.max(1, Math.round((distKm / 4.5) * 60));
+
+    // Dibujar o actualizar línea discontinua entre Admin y Cliente
+    const latlngs = [[aLat, aLng], [cLat, cLng]];
+    if (adminToClientPolyline) {
+      adminToClientPolyline.setLatLngs(latlngs);
+    } else {
+      adminToClientPolyline = L.polyline(latlngs, {
+        color: '#38bdf8',
+        weight: 3,
+        dashArray: '6, 8',
+        opacity: 0.9
+      }).addTo(map);
+    }
+
+    // Configurar enlace de navegación con origen = Admin y destino = Cliente
+    if (btnGmaps) {
+      btnGmaps.href = `https://www.google.com/maps/dir/?api=1&origin=${aLat},${aLng}&destination=${cLat},${cLng}&travelmode=driving`;
+      btnGmaps.innerHTML = `🚗 Cómo Llegar (${distText} • ~${driveMinutes}m)`;
+    }
+
+    // Actualizar badge con distancia en vivo
+    const telemText = document.getElementById('telemetry-text');
+    if (telemText) {
+      telemText.innerHTML = `
+        <div style="margin-bottom:4px;">
+          <strong>${client.name}</strong> [DNI: ${client.dni || client.id}] |
+          Batería: <strong>${client.battery !== undefined && client.battery !== null ? Math.round(client.battery)+'%' : 'N/A'}</strong> |
+          Velocidad: <strong>${client.speed ? Math.round(client.speed * 3.6)+' km/h' : '0 km/h'}</strong>
+        </div>
+        <div style="color:#38bdf8; font-weight:700; font-size:12px; display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+          <span>📍 Distancia desde tu posición: <strong>${distText}</strong></span>
+          <span>🚗 ~${driveMinutes} min en auto</span>
+          <span>🚶 ~${walkMinutes} min a pie</span>
+        </div>
+      `;
+    }
+  } else {
+    // Si aún no se fijó la ubicación del admin, ofrecer enlace directo de navegación en Google Maps
+    if (btnGmaps) {
+      btnGmaps.href = `https://www.google.com/maps/dir/?api=1&destination=${cLat},${cLng}&travelmode=driving`;
+      btnGmaps.innerHTML = `🚗 Navegar en Google Maps`;
+    }
+  }
 }
 
 // Variables de estado de enfoque y aislamiento
@@ -241,6 +452,8 @@ function createClientMarker(client) {
         <button class="btn-card highlight" onclick="isolateClient('${client.id}')">🎯 ${isolatedClientId === client.id ? 'Ver Todos' : 'Aislar Solo a Este'}</button>
         <button class="btn-card" onclick="openHistoryModal('${client.id}')">📅 60 Días</button>
         <button class="btn-card" onclick="openGeofenceModalForClient('${client.id}')">📍 Geocerca</button>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving" target="_blank" class="btn-card" style="text-decoration:none; color:#38bdf8; border-color:rgba(56,189,248,0.4); display:inline-flex; align-items:center; gap:4px; font-weight:700;">🚗 Cómo llegar</a>
+        <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}" target="_blank" class="btn-card" style="text-decoration:none; color:#fbbf24; border-color:rgba(245,158,11,0.4); display:inline-flex; align-items:center; gap:4px; font-weight:700;">🚶 Street View</a>
         <button class="btn-card" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#ef4444;" onclick="deleteClientPrompt('${client.id}', '${safeName}')">🗑️ Eliminar</button>
       </div>
     </div>
@@ -277,18 +490,47 @@ function updateMapMarker(client) {
     iconAnchor: [22, 22]
   });
 
+  const safeName = (client.name || 'Cliente').replace(/'/g, "\\'");
+  const updatedPopupContent = `
+    <div class="marker-popup">
+      <h4>${client.name || 'Cliente'}</h4>
+      <p style="color:#38bdf8; font-weight:700; margin-bottom:4px;">DNI: ${client.dni || client.id}</p>
+      <div class="popup-meta">
+        <span>🔋 Batería: <strong>${client.battery !== undefined && client.battery !== null ? Math.round(client.battery)+'%' : 'N/A'}</strong></span>
+        <span>🎯 Precisión: <strong>${client.accuracy ? '±'+Math.round(client.accuracy)+'m' : 'N/A'}</strong></span>
+        <span>⚡ Vel: <strong>${client.speed ? Math.round(client.speed * 3.6)+' km/h' : '0 km/h'}</strong></span>
+        <span>📱 Equipo: <strong>${client.deviceModel || 'Android'}</strong></span>
+        ${client.hardwareId ? `<span>🆔 Hardware: <strong style="font-family:monospace; font-size:10px; color:#38bdf8;">${client.hardwareId}</strong></span>` : ''}
+        <span>📡 Estado: <strong>${client.statusMessage || (client.isOnline ? 'Conectado' : 'Desconectado')}</strong></span>
+      </div>
+      <div class="popup-actions" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
+        <button class="btn-card highlight" onclick="isolateClient('${client.id}')">🎯 ${isolatedClientId === client.id ? 'Ver Todos' : 'Aislar Solo a Este'}</button>
+        <button class="btn-card" onclick="openHistoryModal('${client.id}')">📅 60 Días</button>
+        <button class="btn-card" onclick="openGeofenceModalForClient('${client.id}')">📍 Geocerca</button>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving" target="_blank" class="btn-card" style="text-decoration:none; color:#38bdf8; border-color:rgba(56,189,248,0.4); display:inline-flex; align-items:center; gap:4px; font-weight:700;">🚗 Cómo llegar</a>
+        <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}" target="_blank" class="btn-card" style="text-decoration:none; color:#fbbf24; border-color:rgba(245,158,11,0.4); display:inline-flex; align-items:center; gap:4px; font-weight:700;">🚶 Street View</a>
+        <button class="btn-card" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#ef4444;" onclick="deleteClientPrompt('${client.id}', '${safeName}')">🗑️ Eliminar</button>
+      </div>
+    </div>
+  `;
+
   if (markersMap.has(client.id)) {
     const marker = markersMap.get(client.id);
     marker.setLatLng([lat, lng]);
     marker.setIcon(newIcon);
+    marker.setPopupContent(updatedPopupContent);
     marker.setZIndexOffset(isSelected ? 10000 : 100);
   } else {
     const marker = createClientMarker(client);
-    // Si estamos en modo aislado y no es este cliente, no agregarlo a la capa activa
     if (!isolatedClientId || isolatedClientId === client.id) {
       marker.addTo(map);
     }
     markersMap.set(client.id, marker);
+  }
+
+  // Si este cliente es el seleccionado, actualizar distancia al Admin en vivo
+  if (isSelected) {
+    updateAdminDistanceToClient(client);
   }
 
   // Actualizar recorrido si está activo
@@ -360,6 +602,12 @@ function selectClient(clientId) {
     `;
   }
 
+  // Actualizar distancia al Administrador, trazado de ruta recta y enlaces Google Maps / Street View
+  updateAdminDistanceToClient(client);
+
+  // Filtrar geocercas: Mostrar ÚNICAMENTE las geocercas de este cliente para no combinarlas ni confundir
+  renderGeofencesOnMap();
+
   renderClientList();
 }
 
@@ -410,6 +658,12 @@ function isolateClient(clientId) {
     }
   }
 
+  // Actualizar distancia Admin - Cliente y enlaces de navegación
+  updateAdminDistanceToClient(client);
+
+  // Filtrar geocercas: Mostrar ÚNICAMENTE las geocercas de este cliente
+  renderGeofencesOnMap();
+
   renderClientList();
   showAdminToast(`🎯 Vista aislada para "${client.name}". Los demás clientes se han ocultado del mapa.`, true);
 }
@@ -417,6 +671,7 @@ function isolateClient(clientId) {
 // Desactivar modo aislado y mostrar todos los clientes nuevamente
 function clearIsolation() {
   isolatedClientId = null;
+  selectedClientId = null;
 
   // Restaurar todos los marcadores al mapa
   markersMap.forEach((marker, id) => {
@@ -434,8 +689,23 @@ function clearIsolation() {
     trailsMap.get(activeTrailClientId).addTo(map);
   }
 
+  // Limpiar línea de distancia admin-cliente
+  if (adminToClientPolyline) {
+    map.removeLayer(adminToClientPolyline);
+    adminToClientPolyline = null;
+  }
+
+  const actions = document.getElementById('telemetry-actions');
+  if (actions) actions.style.display = 'none';
+
+  const badge = document.getElementById('telemetry-badge');
+  if (badge) badge.classList.remove('visible');
+
   const banner = document.getElementById('isolation-banner');
   if (banner) banner.style.display = 'none';
+
+  // Restaurar todas las geocercas en el mapa al ver a todos los clientes
+  renderGeofencesOnMap();
 
   renderClientList();
   fitAllMarkers();
@@ -537,6 +807,7 @@ function fitAllMarkers() {
   const bounds = L.latLngBounds([]);
   markersMap.forEach(m => bounds.extend(m.getLatLng()));
   geofencesMap.forEach(c => bounds.extend(c.getLatLng()));
+  if (adminMarker) bounds.extend(adminMarker.getLatLng());
   if (bounds.isValid()) {
     map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
   }
@@ -776,13 +1047,27 @@ function renderClientList() {
   });
 }
 
-// GEOCERCAS: Renderizado y administración
+// GEOCERCAS: Renderizado y administración independiente por cliente
 function renderGeofencesOnMap() {
   // Limpiar círculos viejos
   geofencesMap.forEach(circle => map.removeLayer(circle));
   geofencesMap.clear();
 
-  geofencesList.forEach(fence => {
+  const activeCid = isolatedClientId || selectedClientId;
+  const activeClient = activeCid ? clientsMap.get(activeCid) : null;
+
+  // Filtrar geocercas: Si hay un cliente seleccionado o aislado, mostrar ÚNICAMENTE sus geocercas
+  let fencesToRender = geofencesList;
+  if (activeClient) {
+    const cId = activeClient.id;
+    const cDni = activeClient.dni;
+    fencesToRender = geofencesList.filter(f => {
+      if (!f.clientId) return false;
+      return f.clientId === cId || f.clientId === cDni;
+    });
+  }
+
+  fencesToRender.forEach(fence => {
     let color = '#f59e0b'; // Amarillo
     if (fence.type === 'CASA') color = '#10b981'; // Verde
     if (fence.type === 'TRABAJO') color = '#3b82f6'; // Azul
@@ -796,7 +1081,23 @@ function renderGeofencesOnMap() {
       weight: 2
     }).addTo(map);
 
-    circle.bindTooltip(`<strong>${fence.name}</strong> (${fence.radius}m)<br>Tipo: ${fence.type}`, {
+    let ownerLabel = 'Global / Sin asignar';
+    if (fence.clientId) {
+      const owner = clientsMap.get(fence.clientId) || Array.from(clientsMap.values()).find(c => c.dni === fence.clientId);
+      if (owner) {
+        ownerLabel = `👤 ${owner.name} [DNI: ${owner.dni || owner.id}]`;
+      } else {
+        ownerLabel = `DNI: ${fence.clientId}`;
+      }
+    }
+
+    circle.bindTooltip(`
+      <div style="font-size:12px; line-height:1.4;">
+        <strong style="color:${color}; font-size:13px;">${fence.name}</strong> (${fence.radius}m)<br>
+        Tipo: <strong>${fence.type}</strong><br>
+        <span style="color:#94a3b8; font-size:11px;">${ownerLabel}</span>
+      </div>
+    `, {
       permanent: false,
       direction: 'top'
     });
@@ -813,20 +1114,49 @@ function renderGeofencesListUI() {
   const container = document.getElementById('geofences-list-container');
   if (!container) return;
 
-  if (geofencesList.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">No hay geocercas creadas aún.</p>';
+  const filterSelect = document.getElementById('fence-filter-client');
+  const filterVal = filterSelect ? filterSelect.value : '';
+
+  let filtered = geofencesList;
+  if (filterVal) {
+    filtered = geofencesList.filter(f => f.clientId === filterVal);
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; padding:8px 0;">No hay geocercas para este criterio.</p>';
     return;
   }
 
   container.innerHTML = '';
-  geofencesList.forEach(f => {
+  filtered.forEach(f => {
+    let clientLabel = '🌐 Global / Sin Asignar';
+    let clientIdMatch = null;
+    if (f.clientId) {
+      const owner = clientsMap.get(f.clientId) || Array.from(clientsMap.values()).find(c => c.dni === f.clientId);
+      if (owner) {
+        clientLabel = `👤 ${owner.name} [${owner.dni || owner.id}]`;
+        clientIdMatch = owner.id;
+      } else {
+        clientLabel = `DNI: ${f.clientId}`;
+        clientIdMatch = f.clientId;
+      }
+    }
+
+    let typeColor = '#f59e0b';
+    if (f.type === 'CASA') typeColor = '#10b981';
+    if (f.type === 'TRABAJO') typeColor = '#3b82f6';
+    if (f.type === 'ZONA_RIESGO') typeColor = '#ef4444';
+
     const item = document.createElement('div');
     item.style.cssText = 'background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:6px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;';
     item.innerHTML = `
       <div>
-        <strong style="font-size:0.9rem; color:var(--text-primary);">${f.name}</strong>
-        <div style="font-size:0.75rem; color:var(--text-muted);">
-          Radio: ${f.radius}m • Tipo: ${f.type} ${f.clientId ? '• Cliente: ' + f.clientId : '• Global'}
+        <div style="display:flex; align-items:center; gap:6px;">
+          <strong style="font-size:0.9rem; color:var(--text-primary);">${f.name}</strong>
+          <span style="font-size:0.7rem; color:${typeColor}; border:1px solid ${typeColor}55; background:${typeColor}22; padding:1px 6px; border-radius:4px; font-weight:700;">${f.type}</span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:3px;">
+          Radio: <strong>${f.radius}m</strong> • <span style="color:#38bdf8;">${clientLabel}</span>
         </div>
       </div>
       <div style="display:flex; gap:6px;">
@@ -837,6 +1167,9 @@ function renderGeofencesListUI() {
 
     item.querySelector('.btn-center-fence').addEventListener('click', () => {
       map.setView([f.latitude, f.longitude], 16);
+      if (clientIdMatch && clientsMap.has(clientIdMatch)) {
+        selectClient(clientIdMatch);
+      }
       document.getElementById('modal-geofences').classList.remove('open');
     });
 
@@ -845,6 +1178,7 @@ function renderGeofencesListUI() {
         await fetch(`/api/geofences/${f.id}`, { method: 'DELETE' });
         geofencesList = geofencesList.filter(x => x.id !== f.id);
         renderGeofencesOnMap();
+        showAdminToast(`🗑️ Geocerca "${f.name}" eliminada`, true);
       }
     });
 
@@ -854,14 +1188,29 @@ function renderGeofencesListUI() {
 
 function updateGeofenceClientSelect() {
   const select = document.getElementById('fence-client-select');
-  if (!select) return;
-  select.innerHTML = '<option value="">🌐 Todos los Clientes (Global)</option>';
-  clientsMap.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.dni || c.id;
-    opt.textContent = `${c.name} [DNI: ${c.dni || c.id}]`;
-    select.appendChild(opt);
-  });
+  const filterSelect = document.getElementById('fence-filter-client');
+
+  if (select) {
+    select.innerHTML = '<option value="">🌐 Todos los Clientes (Global)</option>';
+    clientsMap.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.dni || c.id;
+      opt.textContent = `${c.name} [DNI: ${c.dni || c.id}]`;
+      select.appendChild(opt);
+    });
+  }
+
+  if (filterSelect) {
+    const curVal = filterSelect.value;
+    filterSelect.innerHTML = '<option value="">🌐 Todas las Geocercas</option>';
+    clientsMap.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.dni || c.id;
+      opt.textContent = `👤 ${c.name} [DNI: ${c.dni || c.id}]`;
+      filterSelect.appendChild(opt);
+    });
+    if (curVal) filterSelect.value = curVal;
+  }
 }
 
 function openGeofenceModalForClient(clientId) {
@@ -870,7 +1219,15 @@ function openGeofenceModalForClient(clientId) {
   updateGeofenceClientSelect();
 
   if (client) {
-    document.getElementById('fence-client-select').value = client.dni || client.id;
+    const select = document.getElementById('fence-client-select');
+    const filterSelect = document.getElementById('fence-filter-client');
+    const targetVal = client.dni || client.id;
+    if (select) select.value = targetVal;
+    if (filterSelect) {
+      filterSelect.value = targetVal;
+      renderGeofencesListUI();
+    }
+
     document.getElementById('fence-name').value = `Casa de ${client.name.split(' ')[0]}`;
     if (client.latitude && client.longitude) {
       document.getElementById('fence-lat').value = client.latitude;
@@ -1185,6 +1542,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Centrar mapa
   document.getElementById('btn-fit-all').addEventListener('click', fitAllMarkers);
 
+  // Botón Localízame / Mi Ubicación de Admin
+  const btnAdminLocate = document.getElementById('btn-admin-locate');
+  if (btnAdminLocate) {
+    btnAdminLocate.addEventListener('click', locateAdmin);
+  }
+
   // Toggle sonido
   const soundBtn = document.getElementById('btn-sound-toggle');
   soundBtn.addEventListener('click', () => {
@@ -1329,6 +1692,12 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('fence-name').value = '';
     }
   });
+
+  // Filtro de Geocercas por cliente en modal
+  const filterFenceClient = document.getElementById('fence-filter-client');
+  if (filterFenceClient) {
+    filterFenceClient.addEventListener('change', renderGeofencesListUI);
+  }
 
   // Modal Historial 60 Días
   const modalHistory = document.getElementById('modal-history');

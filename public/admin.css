@@ -655,6 +655,16 @@ button {
   background: rgba(245, 158, 11, 0.35);
 }
 
+.marker-pulse-ring.ring-blue {
+  background: rgba(59, 130, 246, 0.45);
+}
+
+.marker-bubble.bubble-blue {
+  border-color: #3b82f6;
+  background: #1e3a8a;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.8);
+}
+
 @keyframes pulseMarker {
   0% { transform: scale(0.4); opacity: 1; }
   100% { transform: scale(1.6); opacity: 0; }
