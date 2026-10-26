@@ -3,13 +3,16 @@ services:
     name: geoclient-radar
     env: node
     plan: free
+    region: oregon
     buildCommand: npm install
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_x42ZCNOyhABr@ep-billowing-lab-armxjp36-pooler.c-4.us-west-2.aws.neon.tech/neondb?sslmode=require
       - key: ADMIN_PASSWORD
-        generateValue: true
+        value: admin2026
       - key: APP_TZ
         value: America/Lima
       - key: HISTORY_DAYS
