@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Descargar GeoClient para Android | App de Localización</title>
+  <meta name="theme-color" content="#0a0e17">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-secondary: #111827;
+      --bg-card: rgba(17, 24, 39, 0.9);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --accent-emerald: #10b981;
+      --accent-cyan: #06b6d4;
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .download-card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+      text-align: center;
+    }
+
+    .app-icon-wrapper {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #059669, #10b981);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
+    }
+
+    .app-badge-android {
+      position: absolute;
+      bottom: -6px;
+      right: -6px;
+      background: #3ddc84;
+      color: #032b13;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 6px;
+      letter-spacing: 0.04em;
+    }
+
+    .app-title h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .app-title p {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+
+    .file-specs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .file-specs span strong {
+      color: var(--text-primary);
+    }
+
+    .actions-box {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn-download-apk {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 14px 20px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .btn-download-apk:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-web-version {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-web-version:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+
+    .steps-card {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: left;
+    }
+
+    .steps-card h3 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .steps-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 10px;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      color: var(--text-secondary);
+    }
+
+    .step-num {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-emerald);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 0.72rem;
+    }
+
+    .footer-note {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="download-card">
+    <div class="app-icon-wrapper">
+      📡
+      <span class="app-badge-android">APK</span>
+    </div>
+
+    <div class="app-title">
+      <h1>GeoClient Localizador</h1>
+      <p>App ligera para compartir tu ubicación en tiempo real con tu proveedor</p>
+    </div>
+
+    <div class="file-specs">
+      <span>Versión: <strong>1.0 (Android)</strong></span>
+      <span>•</span>
+      <span>Tamaño: <strong>945 KB</strong></span>
+      <span>•</span>
+      <span>Seguridad: <strong>Verificado</strong></span>
+    </div>
+
+    <div class="actions-box">
+      <a href="/download-apk" download="GeoClient-Localizador.apk" class="btn-download-apk" id="main-download-btn">
+        <span>🤖</span> Descargar APK para Android
+      </a>
+      <a href="/client.html" id="link-web-version" class="btn-web-version" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.35); color: #38bdf8;">
+        <span>🍎</span> Usar en iPhone / Apple iOS (Sin Descargar)
+      </a>
+    </div>
+
+    <!-- Pestaña explicativa Android -->
+    <div class="steps-card">
+      <h3><span>🤖</span> Si tu cliente tiene Android:</h3>
+      <ol class="steps-list">
+        <li class="step-item">
+          <span class="step-num">1</span>
+          <div>Descarga el archivo APK con el botón verde superior.</div>
+        </li>
+        <li class="step-item">
+          <span class="step-num">2</span>
+          <div>Si Android pregunta si deseas conservar el archivo, presiona <strong>"Descargar de todos modos"</strong>.</div>
+        </li>
+        <li class="step-item">
+          <span class="step-num">3</span>
+          <div>Abre el archivo e instala. En ajustes, activa <em>"Permitir todo el tiempo"</em>.</div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- Pestaña explicativa Apple iPhone -->
+    <div class="steps-card" style="border-color: rgba(56, 189, 248, 0.3); background: rgba(14, 28, 48, 0.7);">
+      <h3 style="color:#38bdf8;"><span>🍎</span> Si tu cliente tiene iPhone (Apple):</h3>
+      <ol class="steps-list">
+        <li class="step-item">
+          <span class="step-num" style="background:rgba(56,189,248,0.2); color:#38bdf8;">1</span>
+          <div>Abre el enlace en el navegador <strong>Safari</strong> de su iPhone.</div>
+        </li>
+        <li class="step-item">
+          <span class="step-num" style="background:rgba(56,189,248,0.2); color:#38bdf8;">2</span>
+          <div>Toca el icono <strong>Compartir (⎋)</strong> (cuadrado con flecha hacia arriba abajo en Safari).</div>
+        </li>
+        <li class="step-item">
+          <span class="step-num" style="background:rgba(56,189,248,0.2); color:#38bdf8;">3</span>
+          <div>Selecciona <strong>"Agregar a pantalla de inicio"</strong> y pulsa "Agregar".</div>
+        </li>
+        <li class="step-item">
+          <span class="step-num" style="background:rgba(56,189,248,0.2); color:#38bdf8;">4</span>
+          <div>¡Listo! Queda como app en el escritorio de su iPhone y transmite al Radar sin pasar por App Store.</div>
+        </li>
+      </ol>
+    </div>
+
+    <p class="footer-note">Compatible con Android (APK) y Apple iPhone iOS (Web / PWA) • 100% Funcional</p>
+  </div>
+
+  <script>
+    // Preservar parámetros de cliente (id, name, phone) si venían en la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const webLink = document.getElementById('link-web-version');
+    if (urlParams.toString()) {
+      webLink.href = '/client.html?' + urlParams.toString();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "client-tracker-server",
+  "version": "3.0.0",
+  "description": "GeoClient Radar - Servidor y panel de control en tiempo real para rastreo de clientes",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "pg": "^8.13.1",
+    "socket.io": "^4.8.1",
+    "web-push": "^3.6.7"
+  }
+}

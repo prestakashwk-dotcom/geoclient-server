@@ -1,0 +1,21 @@
+{
+  "name": "GeoClient Tracker",
+  "short_name": "GeoClient",
+  "description": "Localizador de clientes en tiempo real",
+  "start_url": "/client.html",
+  "display": "standalone",
+  "background_color": "#0a0e17",
+  "theme_color": "#0a0e17",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/854/854878.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/854/854878.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

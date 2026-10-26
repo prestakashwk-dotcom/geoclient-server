@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: geoclient-radar
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: APP_TZ
+        value: America/Lima
+      - key: HISTORY_DAYS
+        value: "60"
+      - key: OFFLINE_SECONDS
+        value: "120"
+      - key: LOW_BATTERY
+        value: "15"

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoClient Radar | Panel de Localización en Vivo</title>
+  <!-- Google Fonts & Leaflet CSS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="admin.css?v=3.0">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Bar -->
+    <header class="top-nav">
+      <div class="brand">
+        <div class="radar-logo">
+          <span class="radar-sweep"></span>
+          <span class="radar-dot"></span>
+        </div>
+        <div>
+          <h1>GeoClient <span class="badge-pro">RADAR</span></h1>
+          <p class="tagline">Localizador y Geocercas para Clientes</p>
+        </div>
+      </div>
+
+      <div class="server-status-pill">
+        <span class="status-indicator online"></span>
+        <span id="server-status-text">Radar En Vivo</span>
+        <span class="pill-divider">|</span>
+        <span id="active-count-pill">0 clientes activos</span>
+      </div>
+
+      <div class="nav-actions">
+        <button id="btn-toggle-sidebar" class="btn-icon" title="Ocultar/Mostrar Lista de Clientes" style="color:#38bdf8; border-color:rgba(56,189,248,0.4); background:rgba(56,189,248,0.15);">
+          <span class="icon">☰</span>
+        </button>
+        <a href="/client.html" id="btn-back-to-client" class="btn-secondary" style="text-decoration:none; display:flex; align-items:center; gap:6px; color:#10b981; border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.1);" title="Ir a modo transmisor de cliente">
+          <span class="icon">👤</span><span class="btn-label">Transmisor</span>
+        </a>
+        <button id="btn-sound-toggle" class="btn-icon" title="Sonido de alertas">
+          <span class="icon">🔔</span>
+        </button>
+        <button id="btn-alerts" class="btn-icon btn-alerts" title="Centro de alertas (sin señal, batería, GPS, cambio de teléfono...)">
+          <span class="icon">🚨</span>
+          <span id="alerts-badge" class="alerts-badge" style="display:none;">0</span>
+        </button>
+        <button id="btn-geofences" class="btn-secondary" style="background:rgba(245,158,11,0.15); border-color:rgba(245,158,11,0.4); color:#fbbf24;" title="Configurar Geocercas (Casa / Trabajo / Zonas)">
+          <span class="icon">📍</span><span class="btn-label">Geocercas (<span id="geofences-count-pill">0</span>)</span>
+        </button>
+        <button id="btn-open-install-guide" class="btn-secondary" style="background:rgba(56,189,248,0.15); border-color:rgba(56,189,248,0.4); color:#38bdf8; display:flex; align-items:center; gap:6px;" title="Ver opciones para Android y Apple iPhone">
+          <span class="icon">📱</span><span class="btn-label">Android / iOS</span>
+        </button>
+        <button id="btn-fit-all" class="btn-secondary" title="Centrar todos los clientes">
+          <span class="icon">🎯</span><span class="btn-label">Centrar</span>
+        </button>
+        <button id="btn-new-client" class="btn-primary" title="Registrar nuevo cliente por DNI">
+          <span class="icon">➕</span><span class="btn-label">Nuevo Cliente</span>
+        </button>
+        <button id="btn-logout" class="btn-icon" title="Cerrar sesión">
+          <span class="icon">🚪</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Alerta Flotante -->
+    <div id="admin-alert-toast" class="alert-toast">
+      <span class="toast-icon">⚠️</span>
+      <span id="toast-message">Mensaje de alerta</span>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="workspace">
+      <!-- Sidebar / Client List -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="client-search" placeholder="Buscar por DNI, nombre o teléfono...">
+          </div>
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">Todos (<span id="count-all">0</span>)</button>
+            <button class="filter-tab" data-filter="online">En Vivo (<span id="count-online">0</span>)</button>
+            <button class="filter-tab" data-filter="alerts" style="color:#f87171;">⚠️ Alertas (<span id="count-alerts">0</span>)</button>
+            <button class="filter-tab" data-filter="offline">Inactivos (<span id="count-offline">0</span>)</button>
+          </div>
+          <button id="btn-purge-ghosts" class="btn-card" title="Depurar clientes fantasmas o que no transmiten" style="background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.3); color:#f87171; font-size:11px; padding:6px 10px; margin-top:6px; width:100%; border-radius:6px; font-weight:700;">
+            🧹 Limpiar Clientes Fantasmas / Inactivos
+          </button>
+        </div>
+
+        <div class="client-list" id="client-list">
+          <div class="empty-state" id="empty-state">
+            <div class="empty-icon">📡</div>
+            <h3>Esperando señales GPS</h3>
+            <p>Aún no hay clientes transmitiendo. Haz clic en <strong>"Nuevo Cliente / DNI"</strong> para vincular un cliente o prestatario.</p>
+          </div>
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="network-info">
+            <span class="info-label">URL del Cliente:</span>
+            <code id="client-url-preview">Cargando...</code>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Divisor Redimensionable de la Barra Lateral -->
+      <div id="sidebar-drag-handle" class="sidebar-drag-handle" title="Arrastra para cambiar el ancho de la barra o haz clic para plegar/desplegar">
+        <div class="drag-handle-grip"></div>
+      </div>
+
+      <!-- Map Area -->
+      <main class="map-wrapper">
+        <div id="map"></div>
+
+        <!-- Banner de Aislamiento / Enfoque Individual -->
+        <div id="isolation-banner" class="isolation-banner" style="display:none;">
+          <div class="iso-info">
+            <span class="iso-icon">🎯</span>
+            <div>
+              <strong id="iso-client-name">Modo Enfoque Individual</strong>
+              <span id="iso-client-dni" style="font-size:0.75rem; color:#38bdf8; display:block;">DNI: 00000000</span>
+            </div>
+          </div>
+          <button id="btn-clear-isolation" class="btn-primary" style="background:#0284c7; padding:6px 12px; font-size:0.78rem; font-weight:700; white-space:nowrap;">
+            👁️ Mostrar Todos los Clientes
+          </button>
+        </div>
+
+        <!-- Floating Map Controls -->
+        <div class="map-overlay-controls">
+          <div class="map-layer-switcher">
+            <button class="layer-btn active" data-layer="osm" title="Mapa Estándar">🗺️ Callejero</button>
+            <button class="layer-btn" data-layer="dark" title="Vista Oscura">🌙 Oscuro</button>
+            <button class="layer-btn" data-layer="satellite" title="Satélite">🛰️ Satélite</button>
+          </div>
+          <div class="map-telemetry-badge" id="telemetry-badge">
+            <span id="telemetry-text">Selecciona un cliente para ver detalles</span>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Nuevo Cliente / Generar Enlace por DNI -->
+  <div class="modal-backdrop" id="modal-new-client">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Registrar Cliente con DNI</h2>
+        <button class="modal-close" id="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          Ingresa el número de <strong>DNI</strong> del cliente para crear su expediente. El cliente se vinculará con su DNI sin necesidad de códigos aleatorios.
+        </p>
+
+        <div class="form-group">
+          <label for="input-client-dni">Número de DNI / Documento (Obligatorio):</label>
+          <input type="text" id="input-client-dni" placeholder="Ej: 74892150" maxlength="15" required>
+        </div>
+
+        <div class="form-group">
+          <label for="input-client-name">Nombre y Apellidos del Cliente:</label>
+          <input type="text" id="input-client-name" placeholder="Ej: Roberto Méndez Salazar">
+        </div>
+
+        <div class="form-group">
+          <label for="input-client-phone">Teléfono / WhatsApp:</label>
+          <input type="tel" id="input-client-phone" placeholder="Ej: +51 987 654 321">
+        </div>
+
+        <!-- Selector de Sistema Operativo del Cliente -->
+        <div style="margin: 14px 0 16px 0;">
+          <label style="font-weight:700; margin-bottom:6px; display:block; font-size:0.85rem;">¿Qué celular tiene el cliente?</label>
+          <div class="filter-tabs" style="display:flex; gap:8px;">
+            <button type="button" class="filter-tab active" id="tab-modal-android" style="flex:1; padding:8px; font-weight:700;">
+              🤖 Android (Samsung, Xiaomi, Moto...)
+            </button>
+            <button type="button" class="filter-tab" id="tab-modal-apple" style="flex:1; padding:8px; font-weight:700; color:#38bdf8;">
+              🍎 Apple (iPhone / iOS)
+            </button>
+          </div>
+        </div>
+
+        <!-- Sección Android -->
+        <div id="section-modal-android">
+          <div class="form-group">
+            <label>🤖 Enlace de Descarga APK para Android:</label>
+            <div class="copy-input-group">
+              <input type="text" id="apk-download-link" readonly>
+              <button id="btn-copy-apk-link" class="btn-secondary">Copiar</button>
+              <a href="/download-apk" download="GeoClient-Localizador.apk" class="btn-secondary" style="text-decoration:none; padding:8px 12px; display:flex; align-items:center;">📥 APK</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección Apple iPhone -->
+        <div id="section-modal-apple" style="display:none; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); border-radius:8px; padding:12px; margin-bottom:14px;">
+          <h4 style="color:#38bdf8; font-size:0.9rem; margin-bottom:6px;">🍎 Para Clientes con iPhone (Sin Descargas):</h4>
+          <p style="font-size:0.78rem; color:#e2e8f0; line-height:1.4; margin-bottom:8px;">
+            En Apple (iOS) <strong>no se descargan archivos APK</strong>. El cliente simplemente abre su enlace en <strong>Safari</strong> y lo agrega a su pantalla de inicio:
+          </p>
+          <ol style="font-size:0.75rem; color:#94a3b8; padding-left:18px; line-height:1.5;">
+            <li>Escanea el código QR de abajo con la <strong>Cámara del iPhone</strong>.</li>
+            <li>En Safari, toca el botón <strong>Compartir (⎋)</strong> (cuadrado con flecha hacia arriba abajo).</li>
+            <li>Selecciona <strong>"Agregar a pantalla de inicio"</strong>. ¡Quedará instalada como app!</li>
+          </ol>
+        </div>
+
+        <div class="form-group">
+          <label id="label-direct-link">🌐 Enlace Directo para el Cliente (Con su DNI):</label>
+          <div class="copy-input-group">
+            <input type="text" id="generated-link" readonly>
+            <button id="btn-copy-link" class="btn-secondary">Copiar</button>
+          </div>
+        </div>
+
+        <div class="qr-container">
+          <div class="qr-placeholder" id="qr-box">
+            <img id="qr-image" src="" alt="Código QR para el cliente" style="display:none; width: 150px; height: 150px; border-radius: 8px;">
+            <div id="qr-loading" class="qr-loading">Generando código QR...</div>
+          </div>
+          <p class="qr-hint" id="qr-caption">Escanea con la cámara del celular (Android o iPhone) para vincular de inmediato</p>
+        </div>
+
+        <div class="modal-actions">
+          <button id="btn-save-client-db" class="btn-primary" style="flex:1;">
+            💾 Guardar Ficha
+          </button>
+          <a id="btn-share-whatsapp" href="#" target="_blank" class="btn-whatsapp">
+            <span>💬</span> WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Geocercas (Casa, Trabajo, Zonas de Alerta) -->
+  <div class="modal-backdrop" id="modal-geofences">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>📍 Administrador de Geocercas</h2>
+        <button class="modal-close" id="btn-close-geofences">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          Crea perímetros virtuales para recibir alertas instantáneas cuando un cliente <strong>LLEGUE</strong> a su casa o <strong>SALGA</strong> de su trabajo.
+        </p>
+
+        <!-- Formulario Crear Geocerca -->
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px;">
+          <h4 style="margin-bottom: 10px; color: #fbbf24; font-size: 0.95rem;">➕ Nueva Geocerca</h4>
+          
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group">
+              <label for="fence-name">Nombre de Geocerca:</label>
+              <input type="text" id="fence-name" placeholder="Ej: Casa de Roberto">
+            </div>
+
+            <div class="form-group">
+              <label for="fence-type">Tipo de Punto:</label>
+              <select id="fence-type" style="width:100%; background:var(--bg-secondary); border:1px solid var(--border-color); color:var(--text-primary); padding:10px; border-radius:var(--radius-sm);">
+                <option value="CASA">🏠 Casa / Domicilio</option>
+                <option value="TRABAJO">🏢 Trabajo / Negocio</option>
+                <option value="ZONA_RIESGO">⚠️ Zona Prohibida / Alerta</option>
+                <option value="OTRO">📍 Otro Punto</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group">
+              <label for="fence-client-select">Asignar a Cliente:</label>
+              <select id="fence-client-select" style="width:100%; background:var(--bg-secondary); border:1px solid var(--border-color); color:var(--text-primary); padding:10px; border-radius:var(--radius-sm);">
+                <option value="">🌐 Todos los Clientes (Global)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="fence-radius">Radio del Perímetro:</label>
+              <select id="fence-radius" style="width:100%; background:var(--bg-secondary); border:1px solid var(--border-color); color:var(--text-primary); padding:10px; border-radius:var(--radius-sm);">
+                <option value="80">80 metros (Inmueble / Portón)</option>
+                <option value="150" selected>150 metros (Manzana / Barrio)</option>
+                <option value="300">300 metros</option>
+                <option value="500">500 metros (Sector)</option>
+                <option value="1000">1 km (Distrito / Perímetro)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group">
+              <label for="fence-lat">Latitud:</label>
+              <input type="number" step="any" id="fence-lat" placeholder="-12.0463">
+            </div>
+            <div class="form-group">
+              <label for="fence-lng">Longitud:</label>
+              <input type="number" step="any" id="fence-lng" placeholder="-77.0427">
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:8px;">
+            <button id="btn-fence-use-client-loc" class="btn-secondary" style="flex:1; font-size:0.8rem;">
+              🎯 Usar posición actual del cliente
+            </button>
+            <button id="btn-create-fence-submit" class="btn-primary" style="flex:1;">
+              ✅ Guardar Geocerca
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de Geocercas Activas -->
+        <h4 style="margin-bottom: 10px; color: var(--text-primary); font-size: 0.95rem;">Geocercas Guardadas</h4>
+        <div id="geofences-list-container" style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <!-- Items generados dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Historial Diario de 60 Días -->
+  <div class="modal-backdrop" id="modal-history">
+    <div class="modal-card" style="max-width: 550px;">
+      <div class="modal-header">
+        <h2>📅 Historial de Recorridos (60 Días)</h2>
+        <button class="modal-close" id="btn-close-history">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
+          <div>
+            <h3 id="history-modal-client-name" style="font-size:1.1rem; color:var(--text-primary);">Cliente</h3>
+            <span id="history-modal-client-dni" style="font-size:0.85rem; color:#38bdf8;">DNI: --------</span>
+          </div>
+          <span style="font-size:0.75rem; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:3px 8px; border-radius:12px;">
+            Almacenamiento: 60 días
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label for="history-day-select">Selecciona el día a consultar:</label>
+          <select id="history-day-select" style="width:100%; background:var(--bg-secondary); border:1px solid var(--border-color); color:var(--text-primary); padding:10px; border-radius:var(--radius-sm); font-size:0.95rem;">
+            <option value="">Cargando días registrados...</option>
+          </select>
+        </div>
+
+        <div id="history-day-stats" style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:12px; margin: 12px 0; display:none;">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:0.85rem;">
+            <div>Puntos GPS registrados: <strong id="stat-points-count">0</strong></div>
+            <div>Batería inicial: <strong id="stat-battery-start">--%</strong></div>
+            <div>Hora primer reporte: <strong id="stat-time-start">--:--</strong></div>
+            <div>Hora último reporte: <strong id="stat-time-end">--:--</strong></div>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top:14px;">
+          <button id="btn-draw-day-route" class="btn-primary" style="flex:1;">
+            🗺️ Dibujar Ruta del Día en el Mapa
+          </button>
+          <button id="btn-clear-day-route" class="btn-secondary">
+            🧹 Limpiar Mapa
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Guía de Descargas e Instalación (Android & Apple iPhone) y Explicación de Login -->
+  <div class="modal-backdrop" id="modal-install-guide">
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <h2>📱 App Android, Apple (iOS) y Acceso Admin vs Cliente</h2>
+        <button class="modal-close" id="btn-close-install-guide">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Pestañas del Modal -->
+        <div class="filter-tabs" style="display:flex; gap:8px; margin-bottom: 16px;">
+          <button type="button" class="filter-tab active" id="tab-guide-install" style="flex:1; padding:8px; font-weight:700;">
+            📱 Descargas (Android & Apple iOS)
+          </button>
+          <button type="button" class="filter-tab" id="tab-guide-roles" style="flex:1; padding:8px; font-weight:700; color:#fbbf24;">
+            🔑 ¿Cómo entra Admin vs Cliente?
+          </button>
+        </div>
+
+        <!-- Sección 1: Descargas e Instalación -->
+        <div id="section-guide-install">
+          <!-- Apple iPhone Card -->
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 14px; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h3 style="color: #38bdf8; font-size: 1rem; display:flex; align-items:center; gap:6px;">
+                🍎 Para Teléfonos APPLE (iPhone / iPad / iOS)
+              </h3>
+              <span style="font-size: 0.72rem; background: #38bdf8; color: #082f49; font-weight: 800; padding: 2px 8px; border-radius: 6px;">PWA SIN DESCARGAS</span>
+            </div>
+            <p style="font-size: 0.82rem; color: #e0f2fe; line-height: 1.45; margin-bottom: 10px;">
+              <strong>¿Por qué Apple no usa archivo APK?</strong> Apple prohíbe por seguridad descargar instaladores desde páginas web. En su lugar, Apple utiliza el sistema oficial <strong>PWA (App Web Progresiva)</strong> que se instala directo en la pantalla del iPhone sin pasar por App Store:
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+              <ol style="font-size: 0.78rem; color: #94a3b8; padding-left: 18px; line-height: 1.6; margin: 0;">
+                <li>Abre el enlace en <strong>Safari</strong> de tu iPhone (o escanea el QR al lado).</li>
+                <li>Toca el botón central <strong>Compartir (ícono del cuadro con flecha ⎋)</strong>.</li>
+                <li>Toca <strong>"Agregar a pantalla de inicio"</strong>.</li>
+                <li>¡Listo! Queda instalada en el escritorio de tu iPhone con GPS activo.</li>
+              </ol>
+              <div style="text-align: center;">
+                <img id="qr-iphone-guide" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=&bgcolor=11-18-27&color=56-189-248" alt="QR iPhone" style="width: 95px; height: 95px; border-radius: 6px; border: 1px solid rgba(56,189,248,0.3);">
+                <div style="font-size: 0.65rem; color: #38bdf8; margin-top: 2px; font-weight: 600;">Cámara iPhone</div>
+              </div>
+            </div>
+            <button id="btn-copy-iphone-guide-link" class="btn-secondary" style="width: 100%; color: #38bdf8; border-color: rgba(56,189,248,0.4); font-weight:700;">
+              📋 Copiar Enlace + Instrucciones para iPhone
+            </button>
+          </div>
+
+          <!-- Android Card -->
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h3 style="color: #10b981; font-size: 1rem; display:flex; align-items:center; gap:6px;">
+                🤖 Para Teléfonos ANDROID (Samsung, Xiaomi, Motorola...)
+              </h3>
+              <span style="font-size: 0.72rem; background: #10b981; color: #022c1b; font-weight: 800; padding: 2px 8px; border-radius: 6px;">ARCHIVO APK DIRECTO</span>
+            </div>
+            <p style="font-size: 0.82rem; color: #d1fae5; line-height: 1.45; margin-bottom: 10px;">
+              En Android sí se puede descargar el instalador nativo <strong>GeoClient-Localizador.apk</strong> con acceso a GPS en segundo plano y combate al ahorro de batería:
+            </p>
+            <div style="display:flex; gap:8px;">
+              <a href="/download-apk" download="GeoClient-Localizador.apk" class="btn-primary" style="flex:1; text-decoration:none; text-align:center; padding: 9px 12px;">
+                📥 Descargar APK
+              </a>
+              <button id="btn-copy-global-apk-link" class="btn-secondary" style="flex:1; padding: 9px 12px;">
+                📋 Copiar Enlace APK
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección 2: ¿Cómo Entra Admin vs Cliente? -->
+        <div id="section-guide-roles" style="display:none;">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+            <!-- Rol Admin -->
+            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 10px; padding: 14px;">
+              <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                <span style="font-size:1.3rem;">👑</span>
+                <h4 style="color:#fbbf24; font-size:0.95rem; margin:0;">TÚ: ADMINISTRADOR</h4>
+              </div>
+              <p style="font-size:0.78rem; color:#fde68a; line-height:1.45; margin-bottom:8px;">
+                Eres el prestamista o dueño del sistema. Tu rol es <strong>monitorear</strong> a los clientes.
+              </p>
+              <ul style="font-size:0.75rem; color:#d1d5db; padding-left:16px; line-height:1.5; margin-bottom:10px;">
+                <li>Entras a: <code style="color:#fbbf24; background:rgba(0,0,0,0.4); padding:2px 4px; border-radius:4px;">/admin.html</code></li>
+                <li>Ves el mapa con radar en vivo.</li>
+                <li>Ves alertas si apagan el GPS.</li>
+                <li>Configuras geocercas (casa/trabajo).</li>
+                <li>Ves el historial de 60 días.</li>
+              </ul>
+              <div style="background:rgba(0,0,0,0.3); padding:8px; border-radius:6px; font-size:0.72rem; color:#9ca3af;">
+                ℹ️ No requiere usuario ni contraseña, es tu consola privada.
+              </div>
+            </div>
+
+            <!-- Rol Cliente -->
+            <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 14px;">
+              <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                <span style="font-size:1.3rem;">👤</span>
+                <h4 style="color:#38bdf8; font-size:0.95rem; margin:0;">CLIENTE: PRESTATARIO</h4>
+              </div>
+              <p style="font-size:0.78rem; color:#e0f2fe; line-height:1.45; margin-bottom:8px;">
+                Es la persona que recibe el préstamo. Su celular solo <strong>transmite su GPS</strong>.
+              </p>
+              <ul style="font-size:0.75rem; color:#d1d5db; padding-left:16px; line-height:1.5; margin-bottom:10px;">
+                <li>Entra a: <code style="color:#38bdf8; background:rgba(0,0,0,0.4); padding:2px 4px; border-radius:4px;">/client.html</code></li>
+                <li><strong>¿Cómo se logea?</strong> Con su número de <strong>DNI</strong>.</li>
+                <li>Si le envías el link de WhatsApp, se logea solo.</li>
+                <li>Si abre la app vacía, escribe su DNI una sola vez.</li>
+                <li><strong>NUNCA</strong> ve a otros clientes ni el mapa admin.</li>
+              </ul>
+              <div style="background:rgba(0,0,0,0.3); padding:8px; border-radius:6px; font-size:0.72rem; color:#9ca3af;">
+                🔒 El cliente solo ve su botón verde "Transmitiendo".
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.04); border:1px solid var(--border-color); border-radius:8px; padding:10px; font-size:0.78rem; color:#cbd5e1; line-height:1.5;">
+            <strong>¿Cómo vincular a un nuevo cliente paso a paso?</strong><br>
+            1. Haz clic en <strong>"➕ Nuevo Cliente / DNI"</strong> en la parte superior.<br>
+            2. Ingresa su número de DNI (ej: <code style="color:#38bdf8;">74892150</code>) y su nombre.<br>
+            3. Haz clic en <strong>"💬 WhatsApp"</strong> o copia su enlace para enviárselo.<br>
+            4. Cuando el cliente abra el enlace en su Android o iPhone, ¡aparecerá de inmediato en tu radar!
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmación de Borrado de Cliente -->
+  <div id="modal-confirm-delete" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 440px; border-color: rgba(239, 68, 68, 0.45); box-shadow: 0 20px 50px rgba(239, 68, 68, 0.25);">
+      <div class="modal-header" style="background: rgba(239, 68, 68, 0.1); border-bottom-color: rgba(239, 68, 68, 0.3);">
+        <h2 style="color: #ef4444; display: flex; align-items: center; gap: 8px;">
+          <span>🗑️</span> ¿Eliminar Cliente?
+        </h2>
+        <button class="modal-close" id="btn-close-delete-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <p style="font-size: 0.9rem; color: #f3f4f6; line-height: 1.5; margin-bottom: 12px;">
+          Estás a punto de borrar del sistema permanentemente al cliente:
+        </p>
+        <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+          <div style="font-size: 1.05rem; font-weight: 800; color: #ffffff;" id="del-client-name">Nombre Cliente</div>
+          <div style="font-size: 0.82rem; color: #38bdf8; font-weight: 700; margin-top: 2px;" id="del-client-dni">DNI: 00000000</div>
+        </div>
+        <p style="font-size: 0.8rem; color: #fca5a5; background: rgba(239, 68, 68, 0.1); border: 1px dashed rgba(239, 68, 68, 0.3); padding: 8px 12px; border-radius: 6px; line-height: 1.4;">
+          ⚠️ <strong>Atención:</strong> Se eliminarán su última coordenada GPS, su historial de 60 días y sus estadísticas del radar.
+        </p>
+        <div class="modal-actions" style="margin-top: 16px; gap: 10px; display: flex;">
+          <button id="btn-cancel-delete" class="btn-secondary" style="flex: 1; padding: 10px; justify-content: center; font-weight: 600;">
+            Cancelar
+          </button>
+          <button id="btn-confirm-delete" class="btn-primary" style="flex: 1; padding: 10px; justify-content: center; background: #dc2626; border-color: #ef4444; font-weight: 700; box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);">
+            🗑️ Sí, Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pantalla de acceso del administrador -->
+  <div id="login-overlay" class="login-overlay">
+    <div class="login-card">
+      <div class="login-logo">📡</div>
+      <h2>GeoClient <span class="badge-pro">RADAR</span></h2>
+      <p>Acceso exclusivo del administrador</p>
+      <input type="password" id="login-password" placeholder="Contraseña de administrador" autocomplete="current-password">
+      <div id="login-error" class="login-error"></div>
+      <button id="login-submit" class="btn-primary" style="width:100%; justify-content:center; padding:12px;">Ingresar</button>
+    </div>
+  </div>
+
+  <!-- Panel del Centro de Alertas -->
+  <aside id="alerts-panel" class="alerts-panel">
+    <div class="alerts-header">
+      <h3>🚨 Centro de Alertas</h3>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button id="btn-ack-all" class="btn-card" style="flex:none; padding:5px 10px;">✓ Todo leído</button>
+        <button id="btn-close-alerts" class="modal-close" title="Cerrar">&times;</button>
+      </div>
+    </div>
+    <div class="push-bar">
+      <span id="push-status">Comprobando avisos...</span>
+      <button id="btn-enable-push" class="btn-primary" style="padding:6px 10px; font-size:0.75rem;">Activar avisos</button>
+    </div>
+    <div id="alerts-list" class="alerts-list"></div>
+  </aside>
+
+  <!-- Leaflet JS & Socket.io -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="admin-auth.js?v=3.0"></script>
+  <script src="admin.js?v=3.0"></script>
+  <script src="admin-alerts.js?v=3.0"></script>
+</body>
+</html>

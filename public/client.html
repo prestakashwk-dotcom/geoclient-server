@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Localizador de Cliente | Compartir Ubicación</title>
+  <meta name="theme-color" content="#0a0e17">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GeoClient">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/854/854878.png">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="client.css">
+</head>
+<body>
+  <div class="mobile-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="app-badge">
+        <span class="radar-dot"></span>
+        <span>GeoClient Conexión</span>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button id="btn-header-admin" class="btn-icon" style="color:#fbbf24; background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.4);" title="Acceso Administrador (Radar)">👑</button>
+        <a href="/descargar.html" class="btn-icon" title="Página de descarga del APK">📥</a>
+        <button id="btn-settings-toggle" class="btn-icon" title="Ajustes de Servidor">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Banner Android (APK) -->
+    <div class="apk-download-banner" id="banner-android">
+      <div class="banner-info">
+        <span class="banner-icon">🤖</span>
+        <div class="banner-text">
+          <strong>¿Instalar la App en Android?</strong>
+          <span>Descarga el APK directo</span>
+        </div>
+      </div>
+      <a href="/download-apk" download="GeoClient-Localizador.apk" class="btn-banner-download">
+        📥 Descargar
+      </a>
+    </div>
+
+    <!-- Banner Apple iPhone (PWA) -->
+    <div class="apk-download-banner" id="banner-ios" style="display:none; background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(16, 185, 129, 0.15)); border: 1px solid rgba(56, 189, 248, 0.35);">
+      <div class="banner-info">
+        <span class="banner-icon">🍎</span>
+        <div class="banner-text">
+          <strong style="color:#38bdf8;">¿Instalar la App en tu iPhone?</strong>
+          <span style="font-size:0.75rem;">Pulsa Compartir (⎋) y <em>"Agregar a pantalla de inicio"</em></span>
+        </div>
+      </div>
+      <button type="button" class="btn-banner-download" onclick="alert('En Safari: Pulsa el botón Compartir (el ícono del cuadrado con flecha ⎋) y luego elige \'Agregar a pantalla de inicio\'. ¡Quedará instalada como app nativa sin App Store!')" style="cursor:pointer; border:none; background:#0284c7;">
+        ℹ️ Cómo instalar
+      </button>
+    </div>
+
+    <!-- Main Content Card -->
+    <main class="main-card">
+      <div class="user-greeting">
+        <div class="avatar-circle" id="user-avatar">CL</div>
+        <div class="user-info">
+          <span class="user-label">Sesión de Cliente</span>
+          <h2 id="client-display-name">Cliente</h2>
+          <span class="client-id-badge" id="client-display-id">DNI: 00000000</span>
+        </div>
+      </div>
+
+      <!-- Big Pulse Transmitter Button -->
+      <div class="transmitter-box">
+        <div class="pulse-container" id="pulse-container">
+          <div class="pulse-ring ring-1"></div>
+          <div class="pulse-ring ring-2"></div>
+          <div class="pulse-ring ring-3"></div>
+          <button id="btn-toggle-tracking" class="power-btn active" title="Transmisión obligatoria permanente">
+            <div class="power-icon">📡</div>
+            <span id="power-text">TRANSMITIENDO</span>
+            <span style="font-size: 0.65rem; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 4px; margin-top: 4px; color: #fbbf24; font-weight: 800; letter-spacing: 0.5px;">🔒 ACTIVO 24/7 (BLOQUEADO)</span>
+          </button>
+        </div>
+        <p class="status-summary" id="status-summary">🔒 Transmisión de ubicación activa las 24 horas por contrato</p>
+      </div>
+
+      <!-- Alerta de Diagnóstico de Permisos y GPS -->
+      <div id="permission-diagnostic-box" class="permission-alert-box" style="display:none; margin-bottom: 14px;">
+        <div class="perm-alert-header">
+          <span id="perm-alert-icon" style="font-size: 1.4rem;">⚠️</span>
+          <h4 id="perm-alert-title">Estado de Permisos de Ubicación</h4>
+        </div>
+        <p id="perm-alert-desc" class="perm-alert-desc">Verificando estado del GPS...</p>
+        
+        <div class="perm-alert-checklist" id="perm-alert-checklist">
+          <div class="perm-check-item">
+            <span>📍 Interruptor GPS del Teléfono:</span>
+            <span class="perm-check-status ok" id="chk-hardware-gps">ENCENDIDO</span>
+          </div>
+          <div class="perm-check-item">
+            <span>🎯 Permiso de Ubicación Precisa:</span>
+            <span class="perm-check-status ok" id="chk-fine-perm">CONCEDIDO</span>
+          </div>
+          <div class="perm-check-item">
+            <span>🛡️ Segundo Plano ("Todo el tiempo"):</span>
+            <span class="perm-check-status ok" id="chk-bg-perm">PERMITIDO</span>
+          </div>
+        </div>
+
+        <button id="btn-perm-action" class="btn-perm-action" type="button">
+          ⚙️ Solucionar Permisos Ahora
+        </button>
+      </div>
+
+      <!-- Live GPS & Telemetry Dashboard -->
+      <div class="telemetry-grid">
+        <div class="telemetry-card">
+          <div class="tel-icon">🎯</div>
+          <div class="tel-data">
+            <span class="tel-label">Precisión GPS</span>
+            <span class="tel-value" id="val-accuracy">Obteniendo...</span>
+          </div>
+        </div>
+
+        <div class="telemetry-card">
+          <div class="tel-icon">🔋</div>
+          <div class="tel-data">
+            <span class="tel-label">Batería</span>
+            <span class="tel-value" id="val-battery">--%</span>
+          </div>
+        </div>
+
+        <div class="telemetry-card">
+          <div class="tel-icon">⚡</div>
+          <div class="tel-data">
+            <span class="tel-label">Velocidad</span>
+            <span class="tel-value" id="val-speed">0 km/h</span>
+          </div>
+        </div>
+
+        <div class="telemetry-card">
+          <div class="tel-icon">📡</div>
+          <div class="tel-data">
+            <span class="tel-label">Pings Enviados</span>
+            <span class="tel-value" id="val-pings">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coordinates & Last Seen -->
+      <div class="coordinates-pill">
+        <span class="coords-label">Coordenadas:</span>
+        <code id="val-coords">Esperando señal GPS...</code>
+      </div>
+
+      <!-- Privacy Assurance -->
+      <div class="privacy-box">
+        <div class="privacy-icon">🔒</div>
+        <p>Garantía de Préstamo Activa: La transmisión GPS debe permanecer encendida 24/7. Cualquier apagado o retiro de permisos reportará alerta inmediata al prestamista.</p>
+      </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settings-modal">
+      <div class="settings-card">
+        <h3>Ajustes de Conexión</h3>
+        <p class="settings-desc">Modifica tu nombre de cliente o la dirección del servidor central.</p>
+
+        <div class="form-group">
+          <label for="input-edit-dni">Número de DNI / Documento:</label>
+          <input type="text" id="input-edit-dni" placeholder="Ej: 74892150" maxlength="15">
+        </div>
+
+        <div class="form-group">
+          <label for="input-edit-name">Tu Nombre / Razón Social:</label>
+          <input type="text" id="input-edit-name" placeholder="Ej: Carlos Gómez">
+        </div>
+
+        <div class="form-group">
+          <label for="input-server-url">Servidor Central:</label>
+          <input type="text" id="input-server-url" placeholder="https://tu-app.onrender.com">
+        </div>
+
+        <div style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:10px; margin-bottom:10px; font-size:11px; line-height:1.4; color:#94a3b8;">
+          💡 <strong>Permisos Permanentes (Life360):</strong><br>
+          En los ajustes de Android, activa <em>"Permitir todo el tiempo"</em> y desactiva <em>"Administrar la app si no se usa"</em>:<br>
+          <button type="button" onclick="if(window.AndroidApp && window.AndroidApp.openAppSettings){window.AndroidApp.openAppSettings();}else{alert('Abre Ajustes > Aplicaciones > GeoClient Localizador > Permisos');}" style="margin-top:6px; width:100%; background:#0284c7; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+            ⚙️ Abrir Ajustes de Permisos de Android
+          </button>
+        </div>
+
+        <div style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:10px; margin-bottom:12px; font-size:11px; line-height:1.4; color:#fde68a;">
+          🔋 <strong>Combate al Ahorro de Batería (Sin Restricciones):</strong><br>
+          Evita que el sistema congele el GPS cuando la pantalla esté apagada:<br>
+          <button type="button" onclick="if(window.AndroidApp && window.AndroidApp.openBatterySettings){window.AndroidApp.openBatterySettings();}else{alert('Abre Ajustes > Aplicaciones > GeoClient > Batería > Sin Restricciones');}" style="margin-top:6px; width:100%; background:#d97706; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+            ⚡ Eximir de Ahorro de Batería (Permitir Segundo Plano)
+          </button>
+        </div>
+
+        <div class="settings-actions">
+          <button id="btn-save-settings" class="btn-primary">Guardar</button>
+          <button id="btn-cancel-settings" class="btn-secondary">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Login con DNI para el Cliente -->
+    <div class="settings-modal" id="modal-client-login" style="z-index: 10000; background: rgba(10, 14, 23, 0.98);">
+      <div class="settings-card" style="text-align: center; max-width: 360px;">
+        <div style="font-size: 3rem; margin-bottom: 8px;">🆔</div>
+        <h2 style="font-size: 1.35rem; font-weight: 800; color: #f9fafb; margin-bottom: 6px;">Ingreso de Cliente</h2>
+        <p style="font-size: 0.85rem; color: #9ca3af; margin-bottom: 20px;">
+          Ingresa tu número de <strong>DNI</strong> para vincular este teléfono a tu cuenta de localización:
+        </p>
+
+        <div class="form-group" style="text-align: left;">
+          <label for="input-login-dni" style="color:#38bdf8; font-weight:700;">Número de DNI (Obligatorio):</label>
+          <input type="text" id="input-login-dni" placeholder="Ej: 74892150" maxlength="15" style="font-size: 1.25rem; font-weight: 800; text-align: center; letter-spacing: 2px;">
+        </div>
+
+        <div class="form-group" style="text-align: left;">
+          <label for="input-login-name">Nombre Completo (Opcional):</label>
+          <input type="text" id="input-login-name" placeholder="Ej: Juan Pérez">
+        </div>
+
+        <button id="btn-login-submit" class="btn-primary" style="width: 100%; padding: 14px; font-size: 1rem; font-weight: 800; margin-top: 10px;">
+          🚀 Conectar y Transmitir
+        </button>
+
+        <p style="font-size: 0.72rem; color: #6b7280; margin-top: 14px;">
+          Tu DNI solo se solicita una vez y quedará memorizado en este dispositivo.
+        </p>
+
+        <div style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+          <button id="btn-open-admin-login" type="button" style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35); color: #fbbf24; font-size: 0.8rem; font-weight: 700; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            👑 ¿Eres el Administrador? Entrar al Radar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Login de Administrador con PIN -->
+    <div class="settings-modal" id="modal-admin-pin" style="z-index: 10001; background: rgba(10, 14, 23, 0.98);">
+      <div class="settings-card" style="text-align: center; max-width: 340px;">
+        <div style="font-size: 3rem; margin-bottom: 6px;">👑</div>
+        <h2 style="font-size: 1.3rem; font-weight: 800; color: #fbbf24; margin-bottom: 4px;">Acceso Administrador</h2>
+        <p style="font-size: 0.82rem; color: #9ca3af; margin-bottom: 16px;">
+          Ingresa el PIN maestro para entrar al panel de control y ver todos los clientes en el radar:
+        </p>
+
+        <div class="form-group" style="text-align: left;">
+          <label for="input-admin-pin" style="color:#fbbf24; font-weight:700;">PIN Maestro de Seguridad:</label>
+          <input type="password" id="input-admin-pin" placeholder="••••" maxlength="10" style="font-size: 1.5rem; font-weight: 800; text-align: center; letter-spacing: 6px;">
+          <small style="font-size: 0.7rem; color: #6b7280; text-align: center; display: block; margin-top: 4px;">PIN por defecto: <strong>1234</strong></small>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <button id="btn-submit-admin-pin" class="btn-primary" style="flex:1; background: #d97706; padding: 12px; font-weight: 800;">
+            🔓 Entrar al Radar
+          </button>
+          <button id="btn-cancel-admin-pin" class="btn-secondary" style="padding: 12px;">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
