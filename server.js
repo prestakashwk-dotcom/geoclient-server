@@ -12,7 +12,7 @@ const { createStore, dayString, HISTORY_DAYS } = require('./db');
 const PORT = process.env.PORT || 3000;
 const IS_PROD = process.env.NODE_ENV === 'production';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || (IS_PROD ? null : 'admin123');
-const REQUIRE_REGISTERED = String(process.env.REQUIRE_REGISTERED || 'false') === 'true';
+const REQUIRE_REGISTERED = String(process.env.REQUIRE_REGISTERED || 'true') === 'true';
 const OFFLINE_SECONDS = Number(process.env.OFFLINE_SECONDS) || 120;   // sin señal => alerta
 const LOW_BATTERY = Number(process.env.LOW_BATTERY) || 15;            // % para alerta de batería baja
 const DEAD_BATTERY = 5;                                               // % para "batería agotada"

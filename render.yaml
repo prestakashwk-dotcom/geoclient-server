@@ -21,3 +21,5 @@ services:
         value: "120"
       - key: LOW_BATTERY
         value: "15"
+      - key: REQUIRE_REGISTERED
+        value: "true"
