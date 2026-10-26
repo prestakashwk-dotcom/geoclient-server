@@ -255,6 +255,8 @@ function showIncomingMessageModal(data) {
   };
 }
 
+const CURRENT_APP_VERSION = 5;
+
 async function checkAppVersion() {
   try {
     const sUrl = clientData.serverUrl || window.location.origin;
@@ -351,6 +353,16 @@ function showPermissionAlert(config) {
   if (chkBg) {
     chkBg.textContent = config.bgPerm ? 'PERMITIDO' : '⚠️ RESTRINGIDO';
     chkBg.className = `perm-check-status ${config.bgPerm ? 'ok' : 'bad'}`;
+  }
+  const chkActivity = document.getElementById('chk-activity-perm');
+  if (chkActivity) {
+    chkActivity.textContent = config.activity !== false ? 'OPTIMIZADO' : '⚠️ RESTRINGIDO';
+    chkActivity.className = `perm-check-status ${config.activity !== false ? 'ok' : 'bad'}`;
+  }
+  const chkBattery = document.getElementById('chk-battery-perm');
+  if (chkBattery) {
+    chkBattery.textContent = 'SIN RESTRICCIÓN';
+    chkBattery.className = 'perm-check-status ok';
   }
 
   if (btnAction) {
@@ -544,7 +556,58 @@ function onGpsSuccess(position) {
   pingsCount++;
   document.getElementById('val-pings').textContent = pingsCount;
   document.getElementById('val-accuracy').textContent = `±${Math.round(accuracy)}m`;
-  document.getElementById('val-speed').textContent = speed ? `${Math.round(speed * 3.6)} km/h` : '0 km/h';
+
+  // Nivel de señal y calidad GPS
+  const meter = document.getElementById('signal-bars-meter');
+  const sigTitle = document.getElementById('sig-quality-title');
+  const sigSub = document.getElementById('sig-quality-sub');
+  const sigIcon = document.getElementById('sig-icon');
+
+  if (meter && sigTitle) {
+    meter.className = 'signal-bars-meter';
+    if (accuracy <= 8) {
+      meter.classList.add('level-4');
+      sigTitle.textContent = `Señal Óptima: ±${Math.round(accuracy)}m (Satélites GNSS)`;
+      if (sigSub) sigSub.textContent = 'GPS + GLONASS + Galileo con máxima precisión';
+      if (sigIcon) sigIcon.textContent = '🟢';
+    } else if (accuracy <= 20) {
+      meter.classList.add('level-3');
+      sigTitle.textContent = `Señal Buena: ±${Math.round(accuracy)}m (Satelital + Red)`;
+      if (sigSub) sigSub.textContent = 'Satélite con triangulación asistida';
+      if (sigIcon) sigIcon.textContent = '🛰️';
+    } else if (accuracy <= 45) {
+      meter.classList.add('level-2');
+      sigTitle.textContent = `Señal Media: ±${Math.round(accuracy)}m (Wi-Fi + Celular)`;
+      if (sigSub) sigSub.textContent = 'Triangulación por antenas y redes cercanas';
+      if (sigIcon) sigIcon.textContent = '🟡';
+    } else {
+      meter.classList.add('level-1');
+      sigTitle.textContent = `Señal Aproximada: ±${Math.round(accuracy)}m`;
+      if (sigSub) sigSub.textContent = 'Bajo techo / Buscando mayor número de satélites';
+      if (sigIcon) sigIcon.textContent = '📡';
+    }
+  }
+
+  // Actividad física y movimiento
+  const speedKmh = speed ? Math.round(speed * 3.6) : 0;
+  document.getElementById('val-speed').textContent = `${speedKmh} km/h`;
+  const actChip = document.getElementById('activity-chip');
+  if (actChip) {
+    if (speedKmh > 20) {
+      actChip.textContent = `🚗 En Vehículo (${speedKmh} km/h)`;
+      actChip.style.background = 'rgba(16,185,129,0.15)';
+      actChip.style.color = '#34d399';
+    } else if (speedKmh >= 3) {
+      actChip.textContent = `🚶 Caminando (${speedKmh} km/h)`;
+      actChip.style.background = 'rgba(56,189,248,0.15)';
+      actChip.style.color = '#38bdf8';
+    } else {
+      actChip.textContent = '🛑 Punto Fijo / Detenido';
+      actChip.style.background = 'rgba(245,158,11,0.15)';
+      actChip.style.color = '#fbbf24';
+    }
+  }
+
   document.getElementById('val-coords').textContent = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
 
   const payload = {
@@ -809,6 +872,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const loginModal = document.getElementById('modal-client-login');
       if (loginModal) loginModal.classList.add('open');
+    });
+  }
+
+  // Temporizador de sesión de transmisión en vivo
+  const sessionStartTime = Date.now();
+  const uptimeEl = document.getElementById('session-uptime');
+  setInterval(() => {
+    if (!uptimeEl) return;
+    const elapsedSec = Math.floor((Date.now() - sessionStartTime) / 1000);
+    const hrs = String(Math.floor(elapsedSec / 3600)).padStart(2, '0');
+    const mins = String(Math.floor((elapsedSec % 3600) / 60)).padStart(2, '0');
+    const secs = String(elapsedSec % 60).padStart(2, '0');
+    uptimeEl.textContent = `⏱️ ${hrs}:${mins}:${secs}`;
+  }, 1000);
+
+  // Copiar coordenadas al portapapeles al hacer clic
+  const coordsBox = document.getElementById('coords-copy-box');
+  const txtCopy = document.getElementById('txt-copy-coords');
+  if (coordsBox) {
+    coordsBox.addEventListener('click', () => {
+      const coordsVal = document.getElementById('val-coords')?.textContent;
+      if (coordsVal && !coordsVal.includes('Esperando')) {
+        navigator.clipboard.writeText(coordsVal);
+        if (navigator.vibrate) navigator.vibrate(25);
+        if (txtCopy) {
+          txtCopy.textContent = '✅ ¡Copiado!';
+          setTimeout(() => { txtCopy.textContent = '📋 Copiar'; }, 2000);
+        }
+      }
     });
   }
 

@@ -598,3 +598,64 @@ button {
   transform: scale(0.98);
 }
 
+/* Barra de intensidad de señal */
+.signal-bars-meter {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 18px;
+}
+
+.signal-bars-meter .bar {
+  width: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  transition: background 0.3s ease, height 0.3s ease;
+}
+
+.signal-bars-meter .bar-1 { height: 6px; }
+.signal-bars-meter .bar-2 { height: 10px; }
+.signal-bars-meter .bar-3 { height: 14px; }
+.signal-bars-meter .bar-4 { height: 18px; }
+
+.signal-bars-meter.level-4 .bar { background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,0.5); }
+.signal-bars-meter.level-3 .bar:nth-child(-n+3) { background: #34d399; }
+.signal-bars-meter.level-2 .bar:nth-child(-n+2) { background: #fbbf24; }
+.signal-bars-meter.level-1 .bar:nth-child(1) { background: #f87171; }
+
+/* Radar sweep beam animation */
+.radar-sweep-beam {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg at 50% 50%, rgba(16, 185, 129, 0) 0deg, rgba(16, 185, 129, 0) 300deg, rgba(16, 185, 129, 0.35) 360deg);
+  animation: radarSweep 3.5s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes radarSweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.lock-pill {
+  font-size: 0.65rem;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  color: #fbbf24;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.sensor-chip {
+  transition: all 0.25s ease;
+}
+
+.sensor-chip:hover {
+  transform: translateY(-1px);
+}
+

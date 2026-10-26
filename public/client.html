@@ -61,28 +61,63 @@
       <div class="user-greeting">
         <div class="avatar-circle" id="user-avatar">CL</div>
         <div class="user-info">
-          <span class="user-label">Sesión de Cliente</span>
+          <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+            <span class="user-label">Sesión de Cliente</span>
+            <span id="conn-latency-pill" class="latency-pill" style="display:inline-flex; align-items:center; gap:5px; font-size:0.72rem; padding:2px 8px; border-radius:999px; background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.3); font-weight:700;">
+              <span class="pulse-dot" style="width:6px; height:6px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+              <span id="txt-conn-latency">En línea</span>
+            </span>
+          </div>
           <h2 id="client-display-name">Cliente</h2>
-          <span class="client-id-badge" id="client-display-id">DNI: 00000000</span>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:2px;">
+            <span class="client-id-badge" id="client-display-id">DNI: 00000000</span>
+            <span style="font-size:0.72rem; color:#94a3b8; font-family:'JetBrains Mono', monospace;" id="session-uptime">⏱️ 00:00:00</span>
+          </div>
         </div>
       </div>
 
-      <!-- Big Pulse Transmitter Button -->
+      <!-- Big Pulse Transmitter Button with Radar Sweep -->
       <div class="transmitter-box">
         <div class="pulse-container" id="pulse-container">
+          <div class="radar-sweep-beam"></div>
           <div class="pulse-ring ring-1"></div>
           <div class="pulse-ring ring-2"></div>
           <div class="pulse-ring ring-3"></div>
           <button id="btn-toggle-tracking" class="power-btn active" title="Transmisión obligatoria permanente">
             <div class="power-icon">📡</div>
             <span id="power-text">TRANSMITIENDO</span>
-            <span style="font-size: 0.65rem; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 4px; margin-top: 4px; color: #fbbf24; font-weight: 800; letter-spacing: 0.5px;">🔒 ACTIVO 24/7 (BLOQUEADO)</span>
+            <span class="lock-pill">🔒 EN VIVO 24/7 (BLOQUEADO)</span>
           </button>
         </div>
         <p class="status-summary" id="status-summary">🔒 Transmisión de ubicación activa las 24 horas por contrato</p>
+
+        <!-- Barra de Calidad de Señal y Sensores Activos -->
+        <div class="signal-quality-bar" style="margin-top:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:8px 12px; display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span id="sig-icon" style="font-size:1.1rem;">🛰️</span>
+            <div>
+              <div style="font-size:0.75rem; font-weight:700; color:#f3f4f6;" id="sig-quality-title">Calidad de Señal GPS: Obteniendo...</div>
+              <div style="font-size:0.68rem; color:#94a3b8;" id="sig-quality-sub">Satelital GNSS + Red + Sensores</div>
+            </div>
+          </div>
+          <div class="signal-bars-meter" id="signal-bars-meter">
+            <span class="bar bar-1 active"></span>
+            <span class="bar bar-2 active"></span>
+            <span class="bar bar-3 active"></span>
+            <span class="bar bar-4 active"></span>
+          </div>
+        </div>
+
+        <!-- Badges de Sensores de Triangulación Multi-Fuente -->
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; justify-content:center;">
+          <span class="sensor-chip" style="font-size:0.68rem; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:3px 8px; border-radius:6px; font-weight:700;">🛰️ Satélites GNSS</span>
+          <span class="sensor-chip" style="font-size:0.68rem; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#34d399; padding:3px 8px; border-radius:6px; font-weight:700;">📶 Red Móvil / Wi-Fi</span>
+          <span class="sensor-chip" style="font-size:0.68rem; background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.3); color:#c084fc; padding:3px 8px; border-radius:6px; font-weight:700;">🔵 Bluetooth Triangulación</span>
+          <span class="sensor-chip" id="activity-chip" style="font-size:0.68rem; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:#fbbf24; padding:3px 8px; border-radius:6px; font-weight:700;">🚶 Actividad: Fijo</span>
+        </div>
       </div>
 
-      <!-- Alerta de Diagnóstico de Permisos y GPS -->
+      <!-- Alerta de Diagnóstico y Salud de Permisos y GPS -->
       <div id="permission-diagnostic-box" class="permission-alert-box" style="display:none; margin-bottom: 14px;">
         <div class="perm-alert-header">
           <span id="perm-alert-icon" style="font-size: 1.4rem;">⚠️</span>
@@ -102,6 +137,14 @@
           <div class="perm-check-item">
             <span>🛡️ Segundo Plano ("Todo el tiempo"):</span>
             <span class="perm-check-status ok" id="chk-bg-perm">PERMITIDO</span>
+          </div>
+          <div class="perm-check-item">
+            <span>🏃 Reconocimiento de Actividad Física:</span>
+            <span class="perm-check-status ok" id="chk-activity-perm">OPTIMIZADO</span>
+          </div>
+          <div class="perm-check-item">
+            <span>⚡ Exento de Ahorro de Batería:</span>
+            <span class="perm-check-status ok" id="chk-battery-perm">SIN RESTRICCIÓN</span>
           </div>
         </div>
 
@@ -131,7 +174,7 @@
         <div class="telemetry-card">
           <div class="tel-icon">⚡</div>
           <div class="tel-data">
-            <span class="tel-label">Velocidad</span>
+            <span class="tel-label">Velocidad / Movimiento</span>
             <span class="tel-value" id="val-speed">0 km/h</span>
           </div>
         </div>
@@ -146,9 +189,14 @@
       </div>
 
       <!-- Coordinates & Last Seen -->
-      <div class="coordinates-pill">
-        <span class="coords-label">Coordenadas:</span>
-        <code id="val-coords">Esperando señal GPS...</code>
+      <div class="coordinates-pill" style="cursor:pointer;" id="coords-copy-box" title="Haz clic para copiar coordenadas">
+        <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="coords-label">Coordenadas:</span>
+            <code id="val-coords">Esperando señal GPS...</code>
+          </div>
+          <span style="font-size:0.75rem; color:#38bdf8;" id="txt-copy-coords">📋 Copiar</span>
+        </div>
       </div>
 
       <!-- Privacy Assurance -->

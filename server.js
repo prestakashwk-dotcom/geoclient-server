@@ -450,11 +450,11 @@ function watchdog() {
 app.get('/api/health', (req, res) => res.json({ ok: true, storage: store.kind, uptime: Math.round(process.uptime()) }));
 
 const APP_VERSION = {
-  versionCode: 4,
-  versionName: '4.0',
+  versionCode: 5,
+  versionName: '5.0',
   apkUrl: '/download-apk',
   forceUpdate: false,
-  releaseNotes: 'Servicio permanente en segundo plano 24/7 y mensajería directa en vivo.'
+  releaseNotes: 'Rastreo ultra-preciso con Actividad Física, Triangulación Bluetooth y reconexión automática en arranque.'
 };
 
 app.get('/api/app-version', (req, res) => res.json({ success: true, ...APP_VERSION }));
