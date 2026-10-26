@@ -19,10 +19,25 @@ let clientData = {
 function initClientData() {
   const params = new URLSearchParams(window.location.search);
   
-  // DNI prioritario o ID
+  // DNI prioritario desde URL o LocalStorage
   clientData.dni = params.get('dni') || params.get('id') || localStorage.getItem('geoclient_dni');
   
-  // Si no hay DNI en la URL ni guardado, solicitar login al cliente
+  // Si no hay DNI en URL ni en LocalStorage, consultar a AndroidApp nativo (SharedPreferences permanente)
+  if (!clientData.dni && window.AndroidApp && typeof window.AndroidApp.getSavedCredentials === 'function') {
+    try {
+      const saved = JSON.parse(window.AndroidApp.getSavedCredentials());
+      if (saved && saved.dni) {
+        clientData.dni = saved.dni;
+        if (saved.name) clientData.name = saved.name;
+        if (saved.phone) clientData.phone = saved.phone;
+        localStorage.setItem('geoclient_dni', clientData.dni);
+        if (clientData.name) localStorage.setItem('geoclient_name', clientData.name);
+        if (clientData.phone) localStorage.setItem('geoclient_phone', clientData.phone);
+      }
+    } catch (_) {}
+  }
+  
+  // Si aún no hay DNI, solicitar login al cliente
   if (!clientData.dni) {
     const loginModal = document.getElementById('modal-client-login');
     if (loginModal) loginModal.classList.add('open');
@@ -564,6 +579,13 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('geoclient_name', inputName);
       } else {
         clientData.name = 'Cliente DNI ' + inputDni;
+      }
+
+      // Guardar también en Android nativo SharedPreferences (inmune a borrado de caché)
+      if (window.AndroidApp && typeof window.AndroidApp.saveClientCredentials === 'function') {
+        try {
+          window.AndroidApp.saveClientCredentials(clientData.dni, clientData.name, clientData.phone || '');
+        } catch (_) {}
       }
 
       document.getElementById('client-display-id').textContent = `DNI: ${clientData.dni}`;

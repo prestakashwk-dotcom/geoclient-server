@@ -234,6 +234,7 @@ function createClientMarker(client) {
         <span>🎯 Precisión: <strong>${client.accuracy ? '±'+Math.round(client.accuracy)+'m' : 'N/A'}</strong></span>
         <span>⚡ Vel: <strong>${client.speed ? Math.round(client.speed * 3.6)+' km/h' : '0 km/h'}</strong></span>
         <span>📱 Equipo: <strong>${client.deviceModel || 'Android'}</strong></span>
+        ${client.hardwareId ? `<span>🆔 Hardware: <strong style="font-family:monospace; font-size:10px; color:#38bdf8;">${client.hardwareId}</strong></span>` : ''}
         <span>📡 Estado: <strong>${client.statusMessage || (client.isOnline ? 'Conectado' : 'Desconectado')}</strong></span>
       </div>
       <div class="popup-actions" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
@@ -646,6 +647,10 @@ function renderClientList() {
           </div>
           <div class="client-phone">
             <strong style="color:#38bdf8;">DNI: ${client.dni || client.id}</strong> • ${client.phone ? client.phone + ' • ' : ''}${timeAgo(client.lastSeen)}
+          </div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:3px; display:flex; align-items:center; gap:6px;">
+            <span>📱 <strong style="color:#e2e8f0;">${client.deviceModel || 'Android'}</strong></span>
+            ${client.hardwareId ? `<span style="font-size:9px; font-family:monospace; color:#38bdf8; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); padding:1px 5px; border-radius:3px;" title="Huella Única Hardware (Android ID): ${client.hardwareId}">HW: ${client.hardwareId.substring(0, 8)}...</span>` : ''}
           </div>
         </div>
       </div>

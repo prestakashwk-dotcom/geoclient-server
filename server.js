@@ -7,6 +7,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 const { createStore, dayString, HISTORY_DAYS } = require('./db');
+const { resolveDeviceModel } = require('./device-models');
 
 /* ------------------------------ Configuración ------------------------------ */
 const PORT = process.env.PORT || 3000;
@@ -142,7 +143,9 @@ function pub(c) {
   }
   o.history = (c.history || []).slice(-120);
   o.isOnline = isOnline(c);
-  o.deviceModel = c.deviceInfo ? c.deviceInfo.model : (c.deviceModel || 'Android');
+  const rawModel = c.deviceInfo ? c.deviceInfo.model : (c.deviceModel || 'Android');
+  o.deviceModel = resolveDeviceModel(rawModel);
+  o.hardwareId = (c.deviceInfo && (c.deviceInfo.id || c.deviceInfo.deviceId)) || null;
   return o;
 }
 
@@ -233,16 +236,46 @@ async function sendPush(alert) {
   } catch (e) { logErr('push')(e); }
 }
 
+// DEDUPLICACIÓN POR IDENTIFICADOR DE HARDWARE
+// Si el mismo celular físico (ANDROID_ID o deviceId) se conecta con otro DNI (ej: borraron datos o crearon registro duplicado),
+// detectamos el duplicado y eliminamos el registro fantasma para que nunca haya 2 registros en curso para un mismo celular.
+function deduplicateHardwareDevice(currentClientId, devId) {
+  if (!devId || String(devId).length < 5) return null;
+  const cleanDevId = String(devId).trim();
+
+  for (const [otherId, other] of Array.from(clients.entries())) {
+    if (otherId === currentClientId) continue;
+    const otherDevId = other.deviceInfo && (other.deviceInfo.id || other.deviceInfo.deviceId);
+    if (otherDevId && String(otherDevId).trim() === cleanDevId) {
+      console.log(`[DEDUPLICACIÓN] Celular hardware ${cleanDevId} ya pertenecía a ${other.name} (${otherId}). Eliminando registro fantasma para evitar duplicados.`);
+      clients.delete(otherId);
+      clearTimeout(pendingSave.get(otherId));
+      pendingSave.delete(otherId);
+      store.deleteClient(otherId).catch(logErr('deleteClient'));
+      io.to('admins').emit('client:removed', { clientId: otherId });
+      return other;
+    }
+  }
+  return null;
+}
+
 /* ----------------------- Cambio de dispositivo / geocercas ----------------------- */
 function checkDeviceChange(client, incoming) {
   if (!incoming) return false;
   const devId = incoming.deviceId || incoming.nativeDevId;
-  const model = clean(incoming.model || 'Dispositivo Desconocido', 60);
+  const rawModel = clean(incoming.model || 'Dispositivo Desconocido', 80);
+  const model = resolveDeviceModel(rawModel);
+
+  // Actualizar modelo comercial limpio en el cliente
+  client.deviceModel = model;
 
   if (!client.deviceInfo) {
     client.deviceInfo = { id: devId, model, firstSeen: Date.now() };
     client.deviceHistory = [client.deviceInfo];
     return false;
+  }
+  if (model && client.deviceInfo.model !== model) {
+    client.deviceInfo.model = model;
   }
   if (client.deviceInfo.id && devId && client.deviceInfo.id !== devId) {
     const previous = { ...client.deviceInfo };
@@ -296,9 +329,11 @@ function processLocation(raw, forceTracking) {
 
   const now = Date.now();
   if (c._lastLocAt && now - c._lastLocAt < 1000) return { ok: true, throttled: true };
-  c._lastLocAt = now;
-
-  if (raw.device) checkDeviceChange(c, raw.device);
+  if (raw.device) {
+    const devId = raw.device.deviceId || raw.device.nativeDevId;
+    if (devId) deduplicateHardwareDevice(id, devId);
+    checkDeviceChange(c, raw.device);
+  }
 
   c.id = id;
   c.dni = id;
@@ -618,7 +653,11 @@ io.on('connection', (socket) => {
     if (data.consent && !c.consentAt) c.consentAt = Number(data.consent.ts) || Date.now();
     c.lastSeen = Date.now();
     c.isTracking = true;
-    if (data.device) checkDeviceChange(c, data.device);
+    if (data.device) {
+      const devId = data.device.deviceId || data.device.nativeDevId;
+      if (devId) deduplicateHardwareDevice(id, devId);
+      checkDeviceChange(c, data.device);
+    }
     const wasOffline = c.offlineAlerted;
     if (wasOffline) { c.offlineAlerted = false; raiseAlert('BACK_ONLINE', c, 'El cliente volvió a conectarse.'); }
     clients.set(id, c);
