@@ -98,6 +98,9 @@ const MODEL_MAP = {
   'SM-S921B': 'Samsung Galaxy S24',
   'SM-S926B': 'Samsung Galaxy S24+',
   'SM-S928B': 'Samsung Galaxy S24 Ultra',
+  'SM-S931B': 'Samsung Galaxy S25',
+  'SM-S936B': 'Samsung Galaxy S25+',
+  'SM-S938B': 'Samsung Galaxy S25 Ultra',
 
   // --- Motorola ---
   'XT2135-1': 'Motorola Moto G60',
