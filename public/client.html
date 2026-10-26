@@ -24,9 +24,7 @@
         <span>GeoClient Conexión</span>
       </div>
       <div style="display:flex; gap:8px;">
-        <button id="btn-header-admin" class="btn-icon" style="color:#fbbf24; background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.4);" title="Acceso Administrador (Radar)">👑</button>
-        <a href="/descargar.html" class="btn-icon" title="Página de descarga del APK">📥</a>
-        <button id="btn-settings-toggle" class="btn-icon" title="Ajustes de Servidor">⚙️</button>
+        <button id="btn-settings-toggle" class="btn-icon" title="Ajustes de Dispositivo">⚙️</button>
       </div>
     </header>
 
@@ -201,6 +199,13 @@
           <button id="btn-save-settings" class="btn-primary">Guardar</button>
           <button id="btn-cancel-settings" class="btn-secondary">Cerrar</button>
         </div>
+
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08);">
+          <button id="btn-logout-client" type="button" style="width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            🚪 Cerrar Sesión / Desvincular DNI
+          </button>
+          <small style="display:block; text-align:center; color:#6b7280; font-size:10px; margin-top:4px;">Permite desvincular este dispositivo para asignar un nuevo DNI</small>
+        </div>
       </div>
     </div>
 
@@ -230,43 +235,11 @@
         <p style="font-size: 0.72rem; color: #6b7280; margin-top: 14px;">
           Tu DNI solo se solicita una vez y quedará memorizado en este dispositivo.
         </p>
-
-        <div style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
-          <button id="btn-open-admin-login" type="button" style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35); color: #fbbf24; font-size: 0.8rem; font-weight: 700; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;">
-            👑 ¿Eres el Administrador? Entrar al Radar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Login de Administrador con PIN -->
-    <div class="settings-modal" id="modal-admin-pin" style="z-index: 10001; background: rgba(10, 14, 23, 0.98);">
-      <div class="settings-card" style="text-align: center; max-width: 340px;">
-        <div style="font-size: 3rem; margin-bottom: 6px;">👑</div>
-        <h2 style="font-size: 1.3rem; font-weight: 800; color: #fbbf24; margin-bottom: 4px;">Acceso Administrador</h2>
-        <p style="font-size: 0.82rem; color: #9ca3af; margin-bottom: 16px;">
-          Ingresa el PIN maestro para entrar al panel de control y ver todos los clientes en el radar:
-        </p>
-
-        <div class="form-group" style="text-align: left;">
-          <label for="input-admin-pin" style="color:#fbbf24; font-weight:700;">PIN Maestro de Seguridad:</label>
-          <input type="password" id="input-admin-pin" placeholder="••••" maxlength="10" style="font-size: 1.5rem; font-weight: 800; text-align: center; letter-spacing: 6px;">
-          <small style="font-size: 0.7rem; color: #6b7280; text-align: center; display: block; margin-top: 4px;">PIN por defecto: <strong>1234</strong></small>
-        </div>
-
-        <div style="display:flex; gap:8px; margin-top:12px;">
-          <button id="btn-submit-admin-pin" class="btn-primary" style="flex:1; background: #d97706; padding: 12px; font-weight: 800;">
-            🔓 Entrar al Radar
-          </button>
-          <button id="btn-cancel-admin-pin" class="btn-secondary" style="padding: 12px;">
-            Cancelar
-          </button>
-        </div>
       </div>
     </div>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="socket.io.min.js"></script>
   <script src="client.js"></script>
 </body>
 </html>

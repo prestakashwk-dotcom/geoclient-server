@@ -657,47 +657,42 @@ document.addEventListener('DOMContentLoaded', () => {
     settingsModal.classList.remove('open');
   });
 
-  // Acceso Administrador (PIN Maestro: 1234)
-  const ADMIN_MASTER_PIN = '1234';
-  const btnHeaderAdmin = document.getElementById('btn-header-admin');
-  const btnOpenAdminLogin = document.getElementById('btn-open-admin-login');
-  const modalAdminPin = document.getElementById('modal-admin-pin');
-  const btnCancelAdminPin = document.getElementById('btn-cancel-admin-pin');
-  const btnSubmitAdminPin = document.getElementById('btn-submit-admin-pin');
-  const inputAdminPin = document.getElementById('input-admin-pin');
+  // Botón de Cerrar Sesión / Desvincular DNI
+  const btnLogout = document.getElementById('btn-logout-client');
+  if (btnLogout) {
+    btnLogout.addEventListener('click', () => {
+      if (!confirm('¿Deseas cerrar la sesión y desvincular este DNI de este teléfono?')) return;
 
-  function openAdminPinModal() {
-    if (modalAdminPin && inputAdminPin) {
-      inputAdminPin.value = '';
-      modalAdminPin.classList.add('open');
-      setTimeout(() => inputAdminPin.focus(), 150);
-    }
-  }
+      // Limpiar LocalStorage
+      localStorage.removeItem('geoclient_dni');
+      localStorage.removeItem('geoclient_id');
+      localStorage.removeItem('geoclient_name');
+      localStorage.removeItem('geoclient_phone');
 
-  function handleAdminPinSubmit() {
-    const enteredPin = inputAdminPin.value.trim();
-    const validPin = localStorage.getItem('geoclient_admin_pin') || ADMIN_MASTER_PIN;
+      // Limpiar SharedPreferences en Android nativo
+      if (window.AndroidApp && typeof window.AndroidApp.clearSavedCredentials === 'function') {
+        try { window.AndroidApp.clearSavedCredentials(); } catch (_) {}
+      }
 
-    if (enteredPin === validPin || enteredPin === ADMIN_MASTER_PIN) {
-      // Guardar bandera de sesión admin
-      sessionStorage.setItem('geoclient_admin_auth', 'true');
-      const targetOrigin = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
-        ? window.location.origin
-        : (clientData.serverUrl || 'http://192.168.18.12:3000');
-      window.location.href = `${targetOrigin}/admin.html`;
-    } else {
-      alert('❌ PIN Incorrecto.\nSolo el prestamista autorizado puede acceder al Radar.');
-      inputAdminPin.value = '';
-    }
-  }
+      // Desconectar socket actual
+      if (socket) {
+        socket.disconnect();
+      }
 
-  if (btnHeaderAdmin) btnHeaderAdmin.addEventListener('click', openAdminPinModal);
-  if (btnOpenAdminLogin) btnOpenAdminLogin.addEventListener('click', openAdminPinModal);
-  if (btnCancelAdminPin) btnCancelAdminPin.addEventListener('click', () => modalAdminPin.classList.remove('open'));
-  if (btnSubmitAdminPin) btnSubmitAdminPin.addEventListener('click', handleAdminPinSubmit);
-  if (inputAdminPin) {
-    inputAdminPin.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') handleAdminPinSubmit();
+      // Reiniciar datos en memoria
+      clientData.dni = '';
+      clientData.id = '';
+      clientData.name = '';
+
+      // Cerrar modal de ajustes y abrir modal de login
+      settingsModal.classList.remove('open');
+      const inputLoginDni = document.getElementById('input-login-dni');
+      if (inputLoginDni) inputLoginDni.value = '';
+      const inputLoginName = document.getElementById('input-login-name');
+      if (inputLoginName) inputLoginName.value = '';
+
+      const loginModal = document.getElementById('modal-client-login');
+      if (loginModal) loginModal.classList.add('open');
     });
   }
 

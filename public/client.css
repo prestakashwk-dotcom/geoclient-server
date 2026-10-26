@@ -30,15 +30,20 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 16px;
+  align-items: flex-start;
+  padding: 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .mobile-container {
   width: 100%;
   max-width: 440px;
+  margin: auto 0;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -49,6 +54,8 @@ body {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
   position: relative;
   overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Header */
@@ -401,15 +408,17 @@ body {
 
 /* Settings Modal */
 .settings-modal {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(10, 14, 23, 0.94);
   backdrop-filter: blur(8px);
   display: none;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  z-index: 100;
+  z-index: 1000;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .settings-modal.open {
@@ -422,9 +431,13 @@ body {
   border-radius: var(--radius-md);
   padding: 20px;
   width: 100%;
+  max-width: 400px;
+  max-height: 88vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
 }
 
 .settings-card h3 {
