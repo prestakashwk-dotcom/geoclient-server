@@ -527,6 +527,70 @@
     </div>
   </div>
 
+  <!-- Modal: Enviar Aviso / Notificación Directa al Cliente -->
+  <div id="modal-notify-client" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 480px; border-color: rgba(56, 189, 248, 0.45); box-shadow: 0 20px 50px rgba(56, 189, 248, 0.2);">
+      <div class="modal-header" style="background: rgba(56, 189, 248, 0.1); border-bottom-color: rgba(56, 189, 248, 0.3);">
+        <h2 style="color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+          <span>🔔</span> Enviar Aviso al Teléfono
+        </h2>
+        <button class="modal-close" id="btn-close-notify-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+          <div style="font-size: 1.05rem; font-weight: 800; color: #ffffff;" id="notify-client-name">Nombre Cliente</div>
+          <div style="font-size: 0.82rem; color: #38bdf8; font-weight: 700; margin-top: 2px;" id="notify-client-dni">DNI: 00000000</div>
+        </div>
+
+        <label style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 6px;">
+          ⚡ PLANTILLAS RÁPIDAS (Haz clic para autocompletar):
+        </label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px;">
+          <button type="button" class="btn-preset-msg" data-title="Recordatorio de Pago" data-msg="Estimado cliente, le recordamos que su cuota vence hoy. Por favor regularizar o comunicarse con administración." style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; font-size: 11px; padding: 7px; border-radius: 6px; font-weight: 700; cursor: pointer; text-align: left;">
+            💳 Recordatorio Pago
+          </button>
+          <button type="button" class="btn-preset-msg" data-title="Alerta de GPS Apagado" data-msg="Aviso Importante: Su señal GPS se encuentra desactivada. Por favor encienda la Ubicación en la barra superior de su celular para evitar recargos o suspensión." style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-size: 11px; padding: 7px; border-radius: 6px; font-weight: 700; cursor: pointer; text-align: left;">
+            🛰️ Alerta GPS Apagado
+          </button>
+          <button type="button" class="btn-preset-msg" data-title="Comunicación Urgente" data-msg="Aviso Urgente: Se requiere que se comunique a la brevedad con la central de atención o su asesor asignado." style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; font-size: 11px; padding: 7px; border-radius: 6px; font-weight: 700; cursor: pointer; text-align: left;">
+            📞 Llamar a Central
+          </button>
+          <button type="button" class="btn-preset-msg" data-title="Verificación de Ubicación" data-msg="Estimado cliente, solicitamos confirmar su presencia y mantener la aplicación activa." style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; font-size: 11px; padding: 7px; border-radius: 6px; font-weight: 700; cursor: pointer; text-align: left;">
+            📍 Confirmar Ubicación
+          </button>
+        </div>
+
+        <label style="font-size: 0.78rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 4px;">
+          Título del Aviso:
+        </label>
+        <input type="text" id="notify-msg-title" value="Aviso de Administración" style="width: 100%; padding: 8px 12px; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 6px; color: #fff; font-size: 0.88rem; margin-bottom: 10px;">
+
+        <label style="font-size: 0.78rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 4px;">
+          Mensaje al Cliente:
+        </label>
+        <textarea id="notify-msg-body" rows="3" placeholder="Escribe el mensaje que aparecerá en la pantalla del celular del cliente..." style="width: 100%; padding: 10px 12px; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 6px; color: #fff; font-size: 0.88rem; line-height: 1.4; resize: vertical; margin-bottom: 12px;"></textarea>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 6px; margin-bottom: 14px;">
+          <label style="font-size: 0.8rem; color: #e2e8f0; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="notify-play-sound" checked style="accent-color: #38bdf8; width: 16px; height: 16px;">
+            <span>🔊 Tocar campanada y vibrar en el celular</span>
+          </label>
+        </div>
+
+        <div id="notify-status-box" style="display:none; font-size:0.8rem; padding:8px 12px; border-radius:6px; margin-bottom:12px; line-height:1.4;"></div>
+
+        <div class="modal-actions" style="gap: 10px; display: flex;">
+          <button id="btn-cancel-notify" class="btn-secondary" style="flex: 1; padding: 10px; justify-content: center; font-weight: 600;">
+            Cerrar
+          </button>
+          <button id="btn-send-notify" class="btn-primary" style="flex: 2; padding: 10px; justify-content: center; background: #0284c7; border-color: #38bdf8; font-weight: 700; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);">
+            🚀 Enviar Aviso en Vivo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Pantalla de acceso del administrador -->
   <div id="login-overlay" class="login-overlay">
     <div class="login-card">

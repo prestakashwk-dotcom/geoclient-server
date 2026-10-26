@@ -181,7 +181,8 @@ const ALERT_META = {
   DEVICE_CHANGED:    { severity: 'high',   icon: '🚨', label: 'Cambio de teléfono' },
   GEOFENCE_ENTER:    { severity: 'info',   icon: '📍', label: 'Entró a geocerca' },
   GEOFENCE_EXIT:     { severity: 'medium', icon: '🚨', label: 'Salió de geocerca' },
-  BACK_ONLINE:       { severity: 'info',   icon: '✅', label: 'Volvió a conectarse' }
+  BACK_ONLINE:       { severity: 'info',   icon: '✅', label: 'Volvió a conectarse' },
+  ADMIN_MESSAGE:     { severity: 'info',   icon: '💬', label: 'Mensaje enviado' }
 };
 const COOLDOWN_TYPES = new Set(['GPS_OFF', 'PERMISSION_DENIED', 'BG_RESTRICTED', 'BATTERY_LOW']);
 const alertCooldown = new Map();
@@ -448,6 +449,16 @@ function watchdog() {
 /* ---------------------------------- Rutas públicas ---------------------------------- */
 app.get('/api/health', (req, res) => res.json({ ok: true, storage: store.kind, uptime: Math.round(process.uptime()) }));
 
+const APP_VERSION = {
+  versionCode: 4,
+  versionName: '4.0',
+  apkUrl: '/download-apk',
+  forceUpdate: false,
+  releaseNotes: 'Servicio permanente en segundo plano 24/7 y mensajería directa en vivo.'
+};
+
+app.get('/api/app-version', (req, res) => res.json({ success: true, ...APP_VERSION }));
+
 app.get(['/download-apk', '/download', '/download/apk', '/geoclient.apk'], (req, res) => {
   res.download(path.join(__dirname, 'public', 'geoclient.apk'), 'GeoClient-Localizador.apk', (err) => {
     if (err && !res.headersSent) res.status(500).send('No se pudo descargar el archivo APK');
@@ -547,6 +558,55 @@ app.post('/api/clients/:id/confirm-device', requireAdmin, (req, res) => {
   persistClient(c, true);
   io.to('admins').emit('client:location-updated', { client: pub(c) });
   res.json({ success: true });
+});
+
+// Enviar notificación / mensaje directo a un cliente desde el panel admin
+app.post('/api/clients/:id/send-message', requireAdmin, (req, res) => {
+  const id = resolveClientId(req.params.id);
+  if (!id) return res.status(404).json({ success: false, error: 'Cliente no encontrado' });
+  const c = clients.get(id);
+
+  const title = clean((req.body && req.body.title) || 'Aviso de Administración', 80);
+  const message = clean((req.body && req.body.message) || '', 500);
+  const playSound = req.body && req.body.playSound !== false;
+  const urgency = req.body && req.body.urgency === 'high' ? 'high' : 'normal';
+
+  if (!message) return res.status(400).json({ success: false, error: 'El mensaje no puede estar vacío' });
+
+  const msgPayload = {
+    id: crypto.randomUUID(),
+    title,
+    message,
+    playSound,
+    urgency,
+    timestamp: Date.now()
+  };
+
+  io.to(`client:${id}`).emit('client:incoming-message', msgPayload);
+  raiseAlert('ADMIN_MESSAGE', c, `Aviso enviado: "${message.slice(0, 70)}"`);
+
+  res.json({ success: true, delivered: isOnline(c), message: msgPayload });
+});
+
+// Enviar notificación / mensaje a TODOS los clientes simultáneamente
+app.post('/api/clients/broadcast-message', requireAdmin, (req, res) => {
+  const title = clean((req.body && req.body.title) || 'Aviso General', 80);
+  const message = clean((req.body && req.body.message) || '', 500);
+  const playSound = req.body && req.body.playSound !== false;
+
+  if (!message) return res.status(400).json({ success: false, error: 'El mensaje no puede estar vacío' });
+
+  const msgPayload = {
+    id: crypto.randomUUID(),
+    title,
+    message,
+    playSound,
+    urgency: 'high',
+    timestamp: Date.now()
+  };
+
+  io.emit('client:incoming-message', msgPayload);
+  res.json({ success: true, count: clients.size, message: msgPayload });
 });
 
 app.get('/api/clients/:id/history', requireAdmin, (req, res) => {
@@ -679,6 +739,16 @@ io.on('connection', (socket) => {
   });
 
   socket.on('client:gps-alert', (data) => { processGpsAlert(data); });
+
+  socket.on('client:message-ack', (ack) => {
+    if (!ack) return;
+    const cid = ack.clientId || boundClientId;
+    io.to('admins').emit('client:message-delivered', {
+      clientId: cid,
+      messageId: ack.messageId,
+      timestamp: Date.now()
+    });
+  });
 
   socket.on('disconnect', () => {
     if (!boundClientId) return;

@@ -712,6 +712,9 @@ function renderClientList() {
         <button class="btn-card ${hasTrailActive ? 'highlight' : ''} btn-trail-client" data-id="${client.id}" title="Ver u ocultar recorrido reciente">
           🗺️ ${hasTrailActive ? 'Ocultar' : 'Ruta'}
         </button>
+        <button class="btn-card btn-notify-client" data-id="${client.id}" title="Enviar aviso o alarma al teléfono del cliente" style="background:rgba(56,189,248,0.15); border-color:rgba(56,189,248,0.4); color:#38bdf8; font-weight:700;">
+          💬 Notificar
+        </button>
         ${client.phone ? `
           <a href="https://wa.me/${client.phone.replace(/[^0-9]/g, '')}" target="_blank" class="btn-card" title="WhatsApp">
             💬 WA
@@ -748,6 +751,11 @@ function renderClientList() {
 
     card.querySelector('.btn-geofence-client').addEventListener('click', () => {
       openGeofenceModalForClient(client.id);
+    });
+
+    card.querySelector('.btn-notify-client').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openNotifyModal(client.id);
     });
 
     const confirmBtn = card.querySelector('.btn-confirm-device');
@@ -1117,6 +1125,20 @@ function setupSocket() {
     showAdminToast(data.message, data.type === 'ENTER');
   });
 
+  socket.on('client:message-delivered', (data) => {
+    const c = clientsMap.get(data.clientId);
+    const name = c ? c.name : 'El cliente';
+    showAdminToast(`✅ ${name} confirmó lectura de aviso en su celular`, true);
+    const statusBox = document.getElementById('notify-status-box');
+    if (statusBox) {
+      statusBox.style.display = 'block';
+      statusBox.style.background = 'rgba(16, 185, 129, 0.2)';
+      statusBox.style.border = '1px solid #10b981';
+      statusBox.style.color = '#34d399';
+      statusBox.textContent = `✅ ¡Aviso leído y confirmado por el cliente! (${new Date(data.timestamp).toLocaleTimeString()})`;
+    }
+  });
+
   socket.on('client:removed', (data) => {
     clientsMap.delete(data.clientId);
     if (markersMap.has(data.clientId)) {
@@ -1475,9 +1497,127 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Modal de Aviso / Notificación al Cliente
+  const notifyModal = document.getElementById('modal-notify-client');
+  const btnCloseNotify = document.getElementById('btn-close-notify-modal');
+  const btnCancelNotify = document.getElementById('btn-cancel-notify');
+  const btnSendNotify = document.getElementById('btn-send-notify');
+
+  if (btnCloseNotify && notifyModal) {
+    btnCloseNotify.addEventListener('click', closeNotifyModal);
+  }
+  if (btnCancelNotify && notifyModal) {
+    btnCancelNotify.addEventListener('click', closeNotifyModal);
+  }
+  if (notifyModal) {
+    notifyModal.addEventListener('click', (e) => {
+      if (e.target === notifyModal) closeNotifyModal();
+    });
+  }
+
+  // Plantillas rápidas
+  document.querySelectorAll('.btn-preset-msg').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const title = btn.dataset.title;
+      const msg = btn.dataset.msg;
+      const titleInput = document.getElementById('notify-msg-title');
+      const bodyInput = document.getElementById('notify-msg-body');
+      if (titleInput && title) titleInput.value = title;
+      if (bodyInput && msg) bodyInput.value = msg;
+    });
+  });
+
+  if (btnSendNotify) {
+    btnSendNotify.addEventListener('click', sendClientNotification);
+  }
+
   // Inicializar divisor arrastrable (resizer) para la barra lateral
   initSidebarResizer();
 });
+
+let activeNotifyClientId = null;
+
+function openNotifyModal(clientId) {
+  const client = clientsMap.get(clientId);
+  if (!client) return;
+
+  activeNotifyClientId = clientId;
+  const modal = document.getElementById('modal-notify-client');
+  const nameEl = document.getElementById('notify-client-name');
+  const dniEl = document.getElementById('notify-client-dni');
+  const bodyEl = document.getElementById('notify-msg-body');
+  const statusBox = document.getElementById('notify-status-box');
+
+  if (nameEl) nameEl.textContent = client.name || 'Cliente';
+  if (dniEl) dniEl.textContent = `DNI: ${client.dni || client.id} • ${client.isOnline ? '🟢 En línea ahora' : '⚪ Desconectado'}`;
+  if (bodyEl) bodyEl.value = '';
+  if (statusBox) statusBox.style.display = 'none';
+
+  if (modal) modal.classList.add('open');
+}
+
+function closeNotifyModal() {
+  const modal = document.getElementById('modal-notify-client');
+  if (modal) modal.classList.remove('open');
+  activeNotifyClientId = null;
+}
+
+async function sendClientNotification() {
+  if (!activeNotifyClientId) return;
+  const client = clientsMap.get(activeNotifyClientId);
+  const title = (document.getElementById('notify-msg-title')?.value || 'Aviso de Administración').trim();
+  const message = (document.getElementById('notify-msg-body')?.value || '').trim();
+  const playSound = document.getElementById('notify-play-sound')?.checked !== false;
+  const statusBox = document.getElementById('notify-status-box');
+
+  if (!message) {
+    alert('Por favor escribe un mensaje o selecciona una plantilla rápida.');
+    return;
+  }
+
+  if (statusBox) {
+    statusBox.style.display = 'block';
+    statusBox.style.background = 'rgba(56, 189, 248, 0.15)';
+    statusBox.style.border = '1px solid #38bdf8';
+    statusBox.style.color = '#7dd3fc';
+    statusBox.textContent = '📡 Enviando aviso al teléfono del cliente...';
+  }
+
+  try {
+    const res = await fetch(`/api/clients/${encodeURIComponent(activeNotifyClientId)}/send-message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, message, playSound })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (statusBox) {
+        statusBox.style.background = 'rgba(16, 185, 129, 0.2)';
+        statusBox.style.border = '1px solid #10b981';
+        statusBox.style.color = '#34d399';
+        statusBox.textContent = `🚀 ¡Aviso transmitido con éxito al teléfono de ${client ? client.name : 'cliente'}! Sonará y vibrará en su pantalla.`;
+      }
+      showAdminToast(`💬 Aviso enviado a ${client ? client.name : 'cliente'}`, true);
+      setTimeout(() => {
+        closeNotifyModal();
+      }, 2500);
+    } else {
+      if (statusBox) {
+        statusBox.style.background = 'rgba(239, 68, 68, 0.2)';
+        statusBox.style.border = '1px solid #ef4444';
+        statusBox.style.color = '#f87171';
+        statusBox.textContent = `Error: ${data.error || 'No se pudo enviar el aviso'}`;
+      }
+    }
+  } catch (err) {
+    if (statusBox) {
+      statusBox.style.background = 'rgba(239, 68, 68, 0.2)';
+      statusBox.style.border = '1px solid #ef4444';
+      statusBox.style.color = '#f87171';
+      statusBox.textContent = 'Error de conexión con el servidor.';
+    }
+  }
+}
 
 // Resizer interactivo para la barra lateral (arrastrar ancho libremente)
 function initSidebarResizer() {

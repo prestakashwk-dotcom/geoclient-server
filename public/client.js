@@ -183,9 +183,123 @@ function connectSocket() {
         device: getDeviceFingerprint()
       });
     });
+
+    socket.on('client:incoming-message', (data) => {
+      if (!data || !data.message) return;
+      playMessageChime();
+      if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 500]);
+      showIncomingMessageModal(data);
+    });
   } catch (err) {
     console.warn('Socket error', err);
   }
+}
+
+const CURRENT_APP_VERSION = 4;
+
+function playMessageChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(523.25, now);
+    osc.frequency.setValueAtTime(659.25, now + 0.15);
+    osc.frequency.setValueAtTime(783.99, now + 0.3);
+    osc.frequency.setValueAtTime(1046.50, now + 0.45);
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.8);
+  } catch (_) {}
+}
+
+function showIncomingMessageModal(data) {
+  let modal = document.getElementById('modal-incoming-message');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-incoming-message';
+    modal.className = 'settings-modal';
+    modal.style.zIndex = '15000';
+    modal.style.background = 'rgba(10, 14, 23, 0.96)';
+    document.body.appendChild(modal);
+  }
+
+  modal.innerHTML = `
+    <div class="settings-card" style="text-align: center; border: 2px solid #38bdf8; max-width: 380px;">
+      <div style="font-size: 3rem; margin-bottom: 6px;">🔔</div>
+      <h2 style="color: #38bdf8; font-size: 1.25rem; font-weight: 800; margin-bottom: 6px;">${data.title || 'Aviso de Administración'}</h2>
+      <p style="font-size: 0.95rem; color: #f9fafb; margin: 14px 0; line-height: 1.5; font-weight: 600; background: rgba(56, 189, 248, 0.08); padding: 12px; border-radius: 8px; border-left: 3px solid #38bdf8; text-align: left;">
+        ${data.message}
+      </p>
+      <button id="btn-ack-msg" class="btn-primary" style="width: 100%; padding: 12px; font-weight: 800; font-size: 1rem; margin-top: 10px;">
+        ✅ Entendido / Confirmar Lectura
+      </button>
+    </div>
+  `;
+
+  modal.classList.add('open');
+
+  document.getElementById('btn-ack-msg').onclick = () => {
+    modal.classList.remove('open');
+    if (socket && socket.connected) {
+      socket.emit('client:message-ack', {
+        messageId: data.id,
+        clientId: clientData.id,
+        dni: clientData.dni
+      });
+    }
+  };
+}
+
+async function checkAppVersion() {
+  try {
+    const sUrl = clientData.serverUrl || window.location.origin;
+    const res = await fetch(`${sUrl}/api/app-version`);
+    if (!res.ok) return;
+    const info = await res.json();
+    if (info && info.versionCode > CURRENT_APP_VERSION) {
+      showUpdateModal(info);
+    }
+  } catch (_) {}
+}
+
+function showUpdateModal(info) {
+  let modal = document.getElementById('modal-app-update');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-app-update';
+    modal.className = 'settings-modal';
+    modal.style.zIndex = '20000';
+    modal.style.background = 'rgba(10, 14, 23, 0.98)';
+    document.body.appendChild(modal);
+  }
+
+  const downloadUrl = (clientData.serverUrl || '') + (info.apkUrl || '/download-apk');
+
+  modal.innerHTML = `
+    <div class="settings-card" style="text-align: center; border: 2px solid #10b981; max-width: 380px;">
+      <div style="font-size: 3rem; margin-bottom: 6px;">🚀</div>
+      <h2 style="color: #34d399; font-size: 1.25rem; font-weight: 800; margin-bottom: 4px;">Actualización Disponible (v${info.versionName || '4.0'})</h2>
+      <p style="font-size: 0.85rem; color: #cbd5e1; margin: 10px 0; line-height: 1.4;">
+        Se ha publicado una nueva versión con mejoras de rastreo satelital 24/7 y conectividad permanente.
+      </p>
+      <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; padding: 10px; margin-bottom: 14px; text-align: left; font-size: 0.78rem; color: #a7f3d0; line-height: 1.4;">
+        ✨ <strong>Mejoras:</strong> ${info.releaseNotes || 'Rastreo 24/7 y mensajería en vivo.'}
+      </div>
+      <a href="${downloadUrl}" download="GeoClient-Localizador.apk" class="btn-primary" style="display:block; text-align:center; padding: 14px; font-size: 1rem; font-weight: 800; text-decoration: none; background: #059669;">
+        ⬇️ Descargar e Instalar Actualización
+      </a>
+      <p style="font-size: 0.72rem; color: #9ca3af; margin-top: 10px;">
+        💡 <strong>Actualización directa:</strong> No necesitas desinstalar tu app actual. Al abrir el archivo descargado, pulsa <em>"Actualizar"</em> y tus datos se conservarán.
+      </p>
+    </div>
+  `;
+
+  modal.classList.add('open');
 }
 
 // Escuchar cambios de conectividad de red del dispositivo (Wi-Fi / Datos móviles)
@@ -552,6 +666,8 @@ function toggleTracking() {
 document.addEventListener('DOMContentLoaded', () => {
   const hasDni = initClientData();
   initBattery();
+  checkAppVersion();
+  setInterval(checkAppVersion, 30 * 60 * 1000);
   if (hasDni) {
     connectSocket();
     startGpsTracking();
