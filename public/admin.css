@@ -616,7 +616,7 @@ button {
 
 /* Custom Marker CSS */
 .dark-tiles .leaflet-tile {
-  filter: brightness(0.55) invert(1) contrast(3.2) hue-rotate(205deg) saturate(0.25) brightness(0.75);
+  /* CartoDB Dark Matter es naturalmente oscuro y nítido */
 }
 
 .radar-marker {

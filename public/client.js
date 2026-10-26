@@ -625,28 +625,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-save-settings').addEventListener('click', () => {
-    const newDni = document.getElementById('input-edit-dni')?.value.trim();
-    const newName = document.getElementById('input-edit-name').value.trim();
-    const newServer = document.getElementById('input-server-url').value.trim();
-
-    if (newDni) {
-      clientData.dni = newDni;
-      clientData.id = newDni;
-      localStorage.setItem('geoclient_dni', newDni);
-      localStorage.setItem('geoclient_id', newDni);
-      document.getElementById('client-display-id').textContent = `DNI: ${newDni}`;
-    }
+    const newName = document.getElementById('input-edit-name')?.value.trim();
     if (newName) {
       clientData.name = newName;
       localStorage.setItem('geoclient_name', newName);
       document.getElementById('client-display-name').textContent = newName;
       document.getElementById('user-avatar').textContent = newName.substring(0, 2).toUpperCase();
-    }
-    if (newServer) {
-      clientData.serverUrl = newServer;
-      localStorage.setItem('geoclient_server', newServer);
-      if (socket) socket.disconnect();
-      connectSocket();
     }
     settingsModal.classList.remove('open');
   });

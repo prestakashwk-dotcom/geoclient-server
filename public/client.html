@@ -168,7 +168,7 @@
 
         <div class="form-group">
           <label for="input-edit-dni">Número de DNI / Documento:</label>
-          <input type="text" id="input-edit-dni" placeholder="Ej: 74892150" maxlength="15">
+          <input type="text" id="input-edit-dni" placeholder="Ej: 74892150" maxlength="15" readonly style="opacity:0.75; cursor:not-allowed; background:rgba(255,255,255,0.05);" title="El DNI está blindado para este teléfono">
         </div>
 
         <div class="form-group">
@@ -176,9 +176,9 @@
           <input type="text" id="input-edit-name" placeholder="Ej: Carlos Gómez">
         </div>
 
-        <div class="form-group">
-          <label for="input-server-url">Servidor Central:</label>
-          <input type="text" id="input-server-url" placeholder="https://tu-app.onrender.com">
+        <input type="hidden" id="input-server-url" value="https://geoclient-radar.onrender.com">
+        <div style="margin-bottom: 14px; font-size: 0.75rem; color: #34d399; display: flex; align-items: center; gap: 6px; background: rgba(16,185,129,0.1); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(16,185,129,0.25);">
+          <span>🔒</span> <span>Servidor central blindado: Conexión protegida</span>
         </div>
 
         <div style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:10px; margin-bottom:10px; font-size:11px; line-height:1.4; color:#94a3b8;">

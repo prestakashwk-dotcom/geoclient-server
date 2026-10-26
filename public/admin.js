@@ -82,18 +82,22 @@ function initMap() {
 
   L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-  tileLayers.osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    subdomains: ['a', 'b', 'c']
+  // Capas de mapas de alto rendimiento (sin bloqueos de OpenStreetMap)
+  tileLayers.osm = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    maxZoom: 20,
+    subdomains: 'abcd',
+    attribution: '&copy; CartoDB &copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  tileLayers.dark = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    subdomains: ['a', 'b', 'c']
+  tileLayers.dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 20,
+    subdomains: 'abcd',
+    attribution: '&copy; CartoDB &copy; OpenStreetMap contributors'
   });
 
   tileLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 19
+    maxZoom: 19,
+    attribution: '&copy; Esri &copy; Earthstar Geographics'
   });
 
   if (navigator.geolocation) {
