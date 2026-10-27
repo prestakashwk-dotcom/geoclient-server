@@ -160,6 +160,108 @@
       transform: translateY(-1px);
     }
 
+    .btn-header-download {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    }
+
+    .btn-header-download:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+    }
+
+    .hero-cta-group {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 30px;
+    }
+
+    .btn-hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 22px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.92rem;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .btn-hero-cta.primary {
+      background: linear-gradient(135deg, #10b981, #047857);
+      color: #ffffff;
+      border: 1px solid rgba(52, 211, 153, 0.45);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-hero-cta.primary:hover {
+      filter: brightness(1.12);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45);
+    }
+
+    .btn-hero-cta.secondary {
+      background: rgba(2, 132, 199, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+
+    .btn-hero-cta.secondary:hover {
+      background: rgba(2, 132, 199, 0.25);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .btn-hero-cta.tertiary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-white);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-hero-cta.tertiary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .portal-card.highlight-green {
+      border-color: rgba(16, 185, 129, 0.35);
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.06), var(--bg-surface));
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .portal-card.highlight-green .card-icon-box {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-portal.btn-green {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-portal.btn-green:hover {
+      filter: brightness(1.15);
+    }
+
     /* Main Container */
     .hero-container {
       max-width: 1200px;
@@ -437,6 +539,9 @@
           <span class="ssl-dot"></span>
           <span>Conexión SSL Segura (256-Bit)</span>
         </div>
+        <a href="/download-apk" download="GeoClient-Localizador-v5.0.apk" class="btn-header-download">
+          📥 Descargar APK (v5.0)
+        </a>
         <a href="/login" class="btn-header-login">
           Acceso Administrador ➔
         </a>
@@ -454,6 +559,31 @@
       <p>
         Plataforma centralizada multi-usuario de alta precisión diseñada para la supervisión de flotas, garantías vehiculares y localización autorizada con consentimiento expreso.
       </p>
+
+      <!-- Botones de Acción Directa Hero -->
+      <div class="hero-cta-group">
+        <a href="/download-apk" download="GeoClient-Localizador-v5.0.apk" class="btn-hero-cta primary" id="btn-hero-download-apk">
+          <span style="font-size:1.35rem;">📥</span>
+          <div style="text-align:left;">
+            <div style="font-size:0.95rem; font-weight:800; line-height:1.2;">Descargar APK Oficial Android (v5.0)</div>
+            <div style="font-size:0.75rem; opacity:0.85; font-weight:500;">Descarga directa • Sin congelamiento • 950 KB</div>
+          </div>
+        </a>
+        <a href="/cliente" class="btn-hero-cta secondary">
+          <span style="font-size:1.25rem;">📱</span>
+          <div style="text-align:left;">
+            <div style="font-size:0.92rem; font-weight:700; line-height:1.2;">Portal Móvil Web</div>
+            <div style="font-size:0.75rem; opacity:0.85; font-weight:500;">Para iPhone / iOS y PC sin descargar</div>
+          </div>
+        </a>
+        <a href="/login" class="btn-hero-cta tertiary">
+          <span style="font-size:1.25rem;">👑</span>
+          <div style="text-align:left;">
+            <div style="font-size:0.92rem; font-weight:700; line-height:1.2;">Panel Administrador</div>
+            <div style="font-size:0.75rem; opacity:0.85; font-weight:500;">Supervisión satelital y geocercas</div>
+          </div>
+        </a>
+      </div>
     </div>
 
     <!-- Módulos de Acceso -->
@@ -498,24 +628,29 @@
         </a>
       </div>
 
-      <!-- Tarjeta 3: Centro de Descargas -->
-      <div class="portal-card">
+      <!-- Tarjeta 3: Centro de Descargas Oficial -->
+      <div class="portal-card highlight-green">
         <div>
           <div class="card-icon-box">📥</div>
           <div class="card-content">
-            <h3>Centro de Descargas</h3>
-            <p>Instaladores oficiales certificados para Android y aplicaciones web para Apple iOS.</p>
+            <h3>Centro de Descargas Oficial</h3>
+            <p>Descarga directa del instalador nativo v5.0 para Android certificado.</p>
             <ul class="card-features">
-              <li>✓ APK nativo oficial v5.0 (GeoClient-Localizador.apk)</li>
+              <li>✓ APK nativo oficial v5.0 (GeoClient-Localizador-v5.0.apk)</li>
               <li>✓ Triangulación Bluetooth y reconocimiento de actividad</li>
               <li>✓ Reconexión automática en caso de reinicio del celular</li>
-              <li>✓ Guía de instalación rápida paso a paso</li>
+              <li>✓ Descarga instantánea anti-bloqueo y sin congelamientos</li>
             </ul>
           </div>
         </div>
-        <a href="/descargar" class="btn-portal secondary">
-          Ver Opciones de Descarga ➔
-        </a>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <a href="/download-apk" download="GeoClient-Localizador-v5.0.apk" class="btn-portal btn-green">
+            📥 Descarga Directa APK v5.0 (Android)
+          </a>
+          <a href="/descargar" class="btn-portal secondary" style="font-size:0.8rem; padding:8px 12px;">
+            📖 Ver Guía de Instalación Paso a Paso ➔
+          </a>
+        </div>
       </div>
     </div>
 

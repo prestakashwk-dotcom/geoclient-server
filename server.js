@@ -4,6 +4,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const os = require('os');
 const crypto = require('crypto');
 const { createStore, dayString, HISTORY_DAYS } = require('./db');
@@ -459,10 +460,41 @@ const APP_VERSION = {
 
 app.get('/api/app-version', (req, res) => res.json({ success: true, ...APP_VERSION }));
 
-app.get(['/download-apk', '/download', '/download/apk', '/geoclient.apk'], (req, res) => {
-  res.download(path.join(__dirname, 'public', 'geoclient.apk'), 'GeoClient-Localizador.apk', (err) => {
-    if (err && !res.headersSent) res.status(500).send('No se pudo descargar el archivo APK');
-  });
+app.get([
+  '/download-apk',
+  '/download',
+  '/download/apk',
+  '/geoclient.apk',
+  '/GeoClient-Localizador-v5.0.apk',
+  '/GeoClient-Localizador.apk'
+], (req, res) => {
+  const apkPath = path.join(__dirname, 'public', 'geoclient.apk');
+  if (!fs.existsSync(apkPath)) {
+    return res.status(404).send('Archivo APK no encontrado en el servidor');
+  }
+
+  try {
+    const stat = fs.statSync(apkPath);
+    res.writeHead(200, {
+      'Content-Type': 'application/vnd.android.package-archive',
+      'Content-Disposition': 'attachment; filename="GeoClient-Localizador-v5.0.apk"',
+      'Content-Length': stat.size,
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'X-Content-Type-Options': 'nosniff'
+    });
+
+    const fileStream = fs.createReadStream(apkPath);
+    fileStream.on('error', (err) => {
+      console.error('[APK Download Stream Error]', err);
+      if (!res.headersSent) res.status(500).send('Error transmitiendo archivo APK');
+    });
+    fileStream.pipe(res);
+  } catch (err) {
+    console.error('[APK Stat Error]', err);
+    if (!res.headersSent) res.status(500).send('Error al procesar archivo APK');
+  }
 });
 
 app.post('/api/location', (req, res) => {

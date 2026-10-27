@@ -292,8 +292,8 @@ function showUpdateModal(info) {
       <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; padding: 10px; margin-bottom: 14px; text-align: left; font-size: 0.78rem; color: #a7f3d0; line-height: 1.4;">
         ✨ <strong>Mejoras:</strong> ${info.releaseNotes || 'Rastreo 24/7 y mensajería en vivo.'}
       </div>
-      <a href="${downloadUrl}" download="GeoClient-Localizador.apk" class="btn-primary" style="display:block; text-align:center; padding: 14px; font-size: 1rem; font-weight: 800; text-decoration: none; background: #059669;">
-        ⬇️ Descargar e Instalar Actualización
+      <a href="${downloadUrl}" download="GeoClient-Localizador-v5.0.apk" class="btn-primary" style="display:block; text-align:center; padding: 14px; font-size: 1rem; font-weight: 800; text-decoration: none; background: #059669;">
+        ⬇️ Descargar e Instalar Actualización (v5.0)
       </a>
       <p style="font-size: 0.72rem; color: #9ca3af; margin-top: 10px;">
         💡 <strong>Actualización directa:</strong> No necesitas desinstalar tu app actual. Al abrir el archivo descargado, pulsa <em>"Actualizar"</em> y tus datos se conservarán.
