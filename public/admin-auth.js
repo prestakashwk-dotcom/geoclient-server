@@ -69,14 +69,22 @@
     if (btn) btn.addEventListener('click', doLogin);
     if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
     const out = document.getElementById('btn-logout');
-    if (out) out.addEventListener('click', logout);
-
     if (!getToken()) {
-      showLogin();
+      window.location.replace('/login');
     } else {
       originalFetch('/api/auth/check', { headers: { Authorization: 'Bearer ' + getToken() } })
-        .then((r) => { if (r.status === 401) { localStorage.removeItem(KEY); showLogin('Tu sesión expiró. Ingresa de nuevo.'); } })
+        .then((r) => { 
+          if (r.status === 401) { 
+            localStorage.removeItem(KEY); 
+            window.location.replace('/login'); 
+          } 
+        })
         .catch(() => {});
     }
   });
+
+  function logout() {
+    localStorage.removeItem(KEY);
+    window.location.replace('/login');
+  }
 })();

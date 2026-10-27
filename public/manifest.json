@@ -2,7 +2,7 @@
   "name": "GeoClient Tracker",
   "short_name": "GeoClient",
   "description": "Localizador de clientes en tiempo real",
-  "start_url": "/client.html",
+  "start_url": "/cliente",
   "display": "standalone",
   "background_color": "#0a0e17",
   "theme_color": "#0a0e17",

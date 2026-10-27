@@ -1363,7 +1363,7 @@ function updateGeneratedLink() {
   const name = document.getElementById('input-client-name').value.trim();
   const phone = document.getElementById('input-client-phone').value.trim();
 
-  const baseUrl = serverInfo ? serverInfo.clientUrl : `${window.location.origin}/client.html`;
+  const baseUrl = serverInfo ? serverInfo.clientUrl : `${window.location.origin}/cliente`;
   const url = new URL(baseUrl);
   url.searchParams.set('dni', dni);
   url.searchParams.set('id', dni);
@@ -1374,8 +1374,8 @@ function updateGeneratedLink() {
   document.getElementById('generated-link').value = fullUrl;
 
   const downloadPageUrl = serverInfo 
-    ? `${serverInfo.baseUrl}/descargar.html` 
-    : `${window.location.origin}/descargar.html`;
+    ? `${serverInfo.baseUrl}/descargar` 
+    : `${window.location.origin}/descargar`;
   const apkInput = document.getElementById('apk-download-link');
   if (apkInput) apkInput.value = downloadPageUrl;
 
@@ -1799,8 +1799,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnCopyGlobalApk) {
     btnCopyGlobalApk.addEventListener('click', () => {
       const apkUrl = serverInfo 
-        ? `${serverInfo.baseUrl}/descargar.html` 
-        : `${window.location.origin}/descargar.html`;
+        ? `${serverInfo.baseUrl}/descargar` 
+        : `${window.location.origin}/descargar`;
       navigator.clipboard.writeText(apkUrl);
       btnCopyGlobalApk.textContent = '¡Copiado!';
       showAdminToast('📋 Enlace de descarga copiado al portapapeles', true);
@@ -1812,7 +1812,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCopyIphoneGuide = document.getElementById('btn-copy-iphone-guide-link');
   if (btnCopyIphoneGuide) {
     btnCopyIphoneGuide.addEventListener('click', () => {
-      const clientUrl = serverInfo ? serverInfo.clientUrl : `${window.location.origin}/client.html`;
+      const clientUrl = serverInfo ? serverInfo.clientUrl : `${window.location.origin}/cliente`;
       const textToCopy = `📱 Instrucciones para iPhone (Apple):\n1. Abre este enlace en Safari: ${clientUrl}\n2. Toca Compartir (icono ⎋ abajo)\n3. Toca "Agregar a pantalla de inicio"`;
       navigator.clipboard.writeText(textToCopy);
       btnCopyIphoneGuide.textContent = '¡Instrucciones Copiadas!';
@@ -1902,6 +1902,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Inicializar divisor arrastrable (resizer) para la barra lateral
   initSidebarResizer();
+
+  // Inicializar historial fluido para modales (permite cerrar modales con el botón Atrás sin romper la navegación)
+  setupModalHistory();
 });
 
 let activeNotifyClientId = null;
@@ -2030,3 +2033,33 @@ function initSidebarResizer() {
     setTimeout(() => { if (map) map.invalidateSize(); }, 200);
   });
 }
+
+// Manejo inteligente del botón Atrás del navegador para cerrar modales sin romper la navegación ni recargar la pantalla
+function setupModalHistory() {
+  window.addEventListener('popstate', (e) => {
+    const openModals = document.querySelectorAll('.modal-backdrop.open, .settings-modal.open');
+    if (openModals.length > 0) {
+      openModals.forEach(m => m.classList.remove('open'));
+    }
+  });
+
+  // Observar cuando se abre un modal para registrar un punto de historial reversible
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        const target = mutation.target;
+        if (target.classList.contains('open') && !target._historyPushed) {
+          target._historyPushed = true;
+          history.pushState({ modalId: target.id }, '');
+        } else if (!target.classList.contains('open')) {
+          target._historyPushed = false;
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll('.modal-backdrop, .settings-modal').forEach(modal => {
+    observer.observe(modal, { attributes: true });
+  });
+}
+

@@ -2,10 +2,579 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=/admin.html">
-  <title>Redirigiendo a GeoClient Radar...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>GeoClient Enterprise | Plataforma Oficial de Telemetría y Geolocalización Segura</title>
+  <meta name="description" content="Plataforma empresarial de monitoreo GPS, gestión de garantías prendarias y telemetría en tiempo real con encriptación SSL de grado bancario.">
+  <meta name="theme-color" content="#0a0f1d">
+  <!-- Favicon & Icons -->
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/854/854878.png">
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #070a12;
+      --bg-surface: #0d1322;
+      --bg-surface-elevated: #131c31;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(56, 189, 248, 0.4);
+      --accent-blue: #0284c7;
+      --accent-cyan: #38bdf8;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --text-white: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-white);
+      min-height: 100vh;
+      line-height: 1.6;
+      background-image: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(2, 132, 199, 0.18), transparent 70%),
+        radial-gradient(ellipse 60% 40% at 90% 80%, rgba(16, 185, 129, 0.08), transparent 60%);
+    }
+
+    /* Header Corporativo */
+    header.site-header {
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(13, 19, 34, 0.75);
+      backdrop-filter: blur(14px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-white);
+    }
+
+    .logo-badge {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    }
+
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-text .enterprise-badge {
+      font-size: 0.65rem;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    }
+
+    .brand-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ssl-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+
+    .ssl-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulseGreen 2s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    .btn-header-login {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      transition: all 0.2s;
+    }
+
+    .btn-header-login:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+    }
+
+    /* Main Container */
+    .hero-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 50px 24px 60px 24px;
+    }
+
+    .hero-intro {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto 48px auto;
+    }
+
+    .trust-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(2, 132, 199, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #7dd3fc;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 6px 16px;
+      border-radius: 30px;
+      margin-bottom: 20px;
+      letter-spacing: 0.03em;
+    }
+
+    .hero-intro h2 {
+      font-size: 2.35rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.25;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-intro p {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Módulos de Acceso */
+    .portals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      margin-bottom: 50px;
+    }
+
+    .portal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 30px 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .portal-card:hover {
+      border-color: var(--border-focus);
+      transform: translateY(-3px);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+    }
+
+    .portal-card.highlight {
+      border-color: rgba(2, 132, 199, 0.45);
+      background: linear-gradient(180deg, rgba(13, 19, 34, 0.95), rgba(15, 23, 42, 0.85));
+    }
+
+    .card-icon-box {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+    }
+
+    .portal-card.highlight .card-icon-box {
+      background: rgba(2, 132, 199, 0.15);
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    .card-content h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text-white);
+    }
+
+    .card-content p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 24px;
+    }
+
+    .card-features {
+      list-style: none;
+      margin-bottom: 24px;
+    }
+
+    .card-features li {
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-portal {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+
+    .btn-portal.primary {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
+    }
+
+    .btn-portal.primary:hover {
+      filter: brightness(1.15);
+    }
+
+    .btn-portal.secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-white);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-portal.secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Sección de Seguridad y Garantía Legal */
+    .security-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 36px 30px;
+      margin-bottom: 50px;
+    }
+
+    .security-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 18px;
+    }
+
+    .security-header h3 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .security-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .security-item {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius-md);
+      padding: 18px;
+    }
+
+    .security-item .sec-icon {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+
+    .security-item h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 6px;
+    }
+
+    .security-item p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    footer.site-footer {
+      border-top: 1px solid var(--border-color);
+      background: rgba(7, 10, 18, 0.95);
+      padding: 30px 24px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent-cyan);
+    }
+
+    @media (max-width: 768px) {
+      .hero-intro h2 { font-size: 1.75rem; }
+      .header-inner { flex-direction: column; align-items: flex-start; }
+      .header-actions { width: 100%; justify-content: space-between; }
+    }
+  </style>
 </head>
-<body style="background:#0a0e17; color:#fff; font-family:sans-serif; text-align:center; padding-top:20vh;">
-  <p>Cargando GeoClient Radar...</p>
+<body>
+
+  <!-- Encabezado Institucional -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="/" class="brand-logo">
+        <div class="logo-badge">📡</div>
+        <div class="brand-text">
+          <h1>GeoClient <span class="enterprise-badge">ENTERPRISE</span></h1>
+          <p>Plataforma Certificada de Telemetría Satelital</p>
+        </div>
+      </a>
+      <div class="header-actions">
+        <div class="ssl-indicator">
+          <span class="ssl-dot"></span>
+          <span>Conexión SSL Segura (256-Bit)</span>
+        </div>
+        <a href="/login" class="btn-header-login">
+          Acceso Administrador ➔
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Principal -->
+  <main class="hero-container">
+    <div class="hero-intro">
+      <div class="trust-pill">
+        <span>🛡️</span> INFRAESTRUCTURA DE GEOLOCALIZACIÓN Y GARANTÍAS EN TIEMPO REAL
+      </div>
+      <h2>Sistema Corporativo de Monitoreo GPS y Telemetría</h2>
+      <p>
+        Plataforma centralizada multi-usuario de alta precisión diseñada para la supervisión de flotas, garantías vehiculares y localización autorizada con consentimiento expreso.
+      </p>
+    </div>
+
+    <!-- Módulos de Acceso -->
+    <div class="portals-grid">
+      <!-- Tarjeta 1: Administrador -->
+      <div class="portal-card highlight">
+        <div>
+          <div class="card-icon-box">👑</div>
+          <div class="card-content">
+            <h3>Panel de Administración</h3>
+            <p>Módulo exclusivo para supervisores, analistas de cobranza y auditores de campo.</p>
+            <ul class="card-features">
+              <li>✓ Radar en vivo sobre Google Maps HD y Satelital</li>
+              <li>✓ Historial de rutas de 60 días punto a punto</li>
+              <li>✓ Geocercas independientes por cliente (Casa / Trabajo)</li>
+              <li>✓ Medición de distancia exacta y navegación GPS</li>
+            </ul>
+          </div>
+        </div>
+        <a href="/login" class="btn-portal primary">
+          Iniciar Sesión de Administrador ➔
+        </a>
+      </div>
+
+      <!-- Tarjeta 2: Cliente / Prestatario -->
+      <div class="portal-card">
+        <div>
+          <div class="card-icon-box">📱</div>
+          <div class="card-content">
+            <h3>Portal de Clientes</h3>
+            <p>Módulo para clientes y titulares vinculados bajo acuerdo de garantía o préstamo.</p>
+            <ul class="card-features">
+              <li>✓ Vinculación protegida mediante número de DNI oficial</li>
+              <li>✓ Transmisión cifrada de bajo consumo de batería</li>
+              <li>✓ Compatible con cualquier celular Android e iPhone</li>
+              <li>✓ No almacena contraseñas ni archivos privados</li>
+            </ul>
+          </div>
+        </div>
+        <a href="/cliente" class="btn-portal secondary">
+          Conectar Dispositivo con DNI ➔
+        </a>
+      </div>
+
+      <!-- Tarjeta 3: Centro de Descargas -->
+      <div class="portal-card">
+        <div>
+          <div class="card-icon-box">📥</div>
+          <div class="card-content">
+            <h3>Centro de Descargas</h3>
+            <p>Instaladores oficiales certificados para Android y aplicaciones web para Apple iOS.</p>
+            <ul class="card-features">
+              <li>✓ APK nativo oficial v5.0 (GeoClient-Localizador.apk)</li>
+              <li>✓ Triangulación Bluetooth y reconocimiento de actividad</li>
+              <li>✓ Reconexión automática en caso de reinicio del celular</li>
+              <li>✓ Guía de instalación rápida paso a paso</li>
+            </ul>
+          </div>
+        </div>
+        <a href="/descargar" class="btn-portal secondary">
+          Ver Opciones de Descarga ➔
+        </a>
+      </div>
+    </div>
+
+    <!-- Garantías de Seguridad, Confianza y Privacidad -->
+    <section class="security-section">
+      <div class="security-header">
+        <div>
+          <h3><span>🔒</span> Compromiso de Seguridad y Protección de Datos</h3>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">
+            Tu privacidad y la integridad de tus datos están garantizadas bajo estándares internacionales.
+          </p>
+        </div>
+        <div style="font-size:0.75rem; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:6px 12px; border-radius:6px; font-weight:700;">
+          📜 Cumplimiento Ley de Protección de Datos Personales
+        </div>
+      </div>
+
+      <div class="security-grid">
+        <div class="security-item">
+          <span class="sec-icon">🔐</span>
+          <h4>Cifrado de Extremo a Extremo</h4>
+          <p>Toda la telemetría viaja a través de túneles HTTPS/WSS encriptados con claves SHA-256 de alta seguridad.</p>
+        </div>
+
+        <div class="security-item">
+          <span class="sec-icon">🛡️</span>
+          <h4>Cero Acceso a Archivos Personales</h4>
+          <p>La aplicación solo procesa coordenadas GPS y porcentaje de batería. Nunca accede a fotos, chats, contactos ni bancos.</p>
+        </div>
+
+        <div class="security-item">
+          <span class="sec-icon">⚖️</span>
+          <h4>Consentimiento Contractual</h4>
+          <p>El servicio opera bajo consentimiento voluntario formal y con fines exclusivos de garantía prendaria o vehicular.</p>
+        </div>
+
+        <div class="security-item">
+          <span class="sec-icon">☁️</span>
+          <h4>Servidores Seguros Cloud</h4>
+          <p>Infraestructura protegida contra accesos no autorizados con disponibilidad continua 24/7 y respaldos permanentes.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Pie de Página Institucional -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <strong>GeoClient Enterprise GPS</strong> • Sistema Central de Telemetría v5.0
+        <div style="margin-top:4px; font-size:0.72rem;">© 2026 Todos los derechos reservados. Seguridad y Confianza Garantizadas.</div>
+      </div>
+      <div class="footer-links">
+        <a href="/login">Acceso Administrador</a>
+        <a href="/cliente">Portal Clientes</a>
+        <a href="/descargar">Descargar App</a>
+      </div>
+    </div>
+  </footer>
+
 </body>
 </html>

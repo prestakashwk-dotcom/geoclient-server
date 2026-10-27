@@ -230,7 +230,7 @@
       <a href="/download-apk" download="GeoClient-Localizador.apk" class="btn-download-apk" id="main-download-btn">
         <span>🤖</span> Descargar APK para Android
       </a>
-      <a href="/client.html" id="link-web-version" class="btn-web-version" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.35); color: #38bdf8;">
+      <a href="/cliente" id="link-web-version" class="btn-web-version" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.35); color: #38bdf8;">
         <span>🍎</span> Usar en iPhone / Apple iOS (Sin Descargar)
       </a>
     </div>
@@ -277,6 +277,10 @@
       </ol>
     </div>
 
+    <div style="text-align:center; margin-top:8px;">
+      <a href="/" style="color:#94a3b8; font-size:0.8rem; text-decoration:none; font-weight:600;">← Volver al Portal Principal</a>
+    </div>
+
     <p class="footer-note">Compatible con Android (APK) y Apple iPhone iOS (Web / PWA) • 100% Funcional</p>
   </div>
 
@@ -285,7 +289,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const webLink = document.getElementById('link-web-version');
     if (urlParams.toString()) {
-      webLink.href = '/client.html?' + urlParams.toString();
+      webLink.href = '/cliente?' + urlParams.toString();
     }
   </script>
 </body>

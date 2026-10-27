@@ -15,7 +15,7 @@
   <div class="app-container">
     <!-- Top Bar -->
     <header class="top-nav">
-      <div class="brand">
+      <a href="/" class="brand" style="text-decoration:none; color:inherit;" title="Ir al Portal Corporativo Principal">
         <div class="radar-logo">
           <span class="radar-sweep"></span>
           <span class="radar-dot"></span>
@@ -24,7 +24,7 @@
           <h1>GeoClient <span class="badge-pro">RADAR</span></h1>
           <p class="tagline">Localizador y Geocercas para Clientes</p>
         </div>
-      </div>
+      </a>
 
       <div class="server-status-pill">
         <span class="status-indicator online"></span>
@@ -37,7 +37,7 @@
         <button id="btn-toggle-sidebar" class="btn-icon" title="Ocultar/Mostrar Lista de Clientes" style="color:#38bdf8; border-color:rgba(56,189,248,0.4); background:rgba(56,189,248,0.15);">
           <span class="icon">☰</span>
         </button>
-        <a href="/client.html" id="btn-back-to-client" class="btn-secondary" style="text-decoration:none; display:flex; align-items:center; gap:6px; color:#10b981; border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.1);" title="Ir a modo transmisor de cliente">
+        <a href="/cliente" id="btn-back-to-client" class="btn-secondary" style="text-decoration:none; display:flex; align-items:center; gap:6px; color:#10b981; border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.1);" title="Ir a modo transmisor de cliente">
           <span class="icon">👤</span><span class="btn-label">Transmisor</span>
         </a>
         <button id="btn-sound-toggle" class="btn-icon" title="Sonido de alertas">
@@ -491,7 +491,7 @@
                 Es la persona que recibe el préstamo. Su celular solo <strong>transmite su GPS</strong>.
               </p>
               <ul style="font-size:0.75rem; color:#d1d5db; padding-left:16px; line-height:1.5; margin-bottom:10px;">
-                <li>Entra a: <code style="color:#38bdf8; background:rgba(0,0,0,0.4); padding:2px 4px; border-radius:4px;">/client.html</code></li>
+                <li>Entra a: <code style="color:#38bdf8; background:rgba(0,0,0,0.4); padding:2px 4px; border-radius:4px;">/cliente</code></li>
                 <li><strong>¿Cómo se logea?</strong> Con su número de <strong>DNI</strong>.</li>
                 <li>Si le envías el link de WhatsApp, se logea solo.</li>
                 <li>Si abre la app vacía, escribe su DNI una sola vez.</li>

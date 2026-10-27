@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Iniciar Sesión | GeoClient Enterprise</title>
+  <meta name="theme-color" content="#070a12">
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/854/854878.png">
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #070a12;
+      --bg-card: rgba(13, 19, 34, 0.9);
+      --border-color: rgba(255, 255, 255, 0.09);
+      --accent-blue: #0284c7;
+      --accent-cyan: #38bdf8;
+      --accent-emerald: #10b981;
+      --text-white: #f8fafc;
+      --text-muted: #94a3b8;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      background-image: 
+        radial-gradient(ellipse 70% 50% at 50% -10%, rgba(2, 132, 199, 0.22), transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 90%, rgba(16, 185, 129, 0.08), transparent 60%);
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 36px 30px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(2, 132, 199, 0.15);
+      backdrop-filter: blur(16px);
+      text-align: center;
+    }
+
+    .brand-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 16px auto;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4);
+    }
+
+    .login-title {
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .login-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .security-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 22px;
+    }
+
+    .form-group {
+      text-align: left;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper input {
+      width: 100%;
+      background: rgba(10, 15, 29, 0.95);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-white);
+      padding: 12px 42px 12px 14px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .input-wrapper input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+
+    .btn-toggle-pwd {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-toggle-pwd:hover {
+      color: var(--text-white);
+    }
+
+    .error-box {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      margin-bottom: 18px;
+      display: none;
+      text-align: left;
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: var(--radius-sm);
+      padding: 13px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-submit:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .back-home {
+      display: inline-block;
+      margin-top: 24px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .back-home:hover {
+      color: var(--accent-cyan);
+    }
+
+    .audit-note {
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-color);
+      font-size: 0.72rem;
+      color: #64748b;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="brand-icon">🛡️</div>
+    <h2 class="login-title">GeoClient Enterprise</h2>
+    <p class="login-subtitle">Acceso Administrativo y Supervisión de Radar</p>
+
+    <div class="security-badge-pill">
+      <span>🔒</span> Sesión Encriptada TLS 256-Bit
+    </div>
+
+    <div id="error-message" class="error-box"></div>
+
+    <form id="login-form" autocomplete="on">
+      <div class="form-group">
+        <label for="password">Contraseña de Administrador:</label>
+        <div class="input-wrapper">
+          <input type="password" id="password" name="password" placeholder="Ingresa tu clave de acceso..." required autofocus>
+          <button type="button" class="btn-toggle-pwd" id="btn-toggle-pwd" title="Mostrar/Ocultar contraseña">👁️</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="btn-submit">
+        <span>Ingresar al Panel de Control</span> ➔
+      </button>
+    </form>
+
+    <a href="/" class="back-home">
+      ← Volver al Portal Corporativo
+    </a>
+
+    <div class="audit-note">
+      🔒 <strong>Acceso Restringido:</strong> Solo personal autorizado. Esta conexión está protegida mediante verificación criptográfica HMAC-SHA256 y su sesión expira automáticamente a los 30 días.
+    </div>
+  </div>
+
+  <script>
+    const KEY = 'gc_admin_token';
+    const form = document.getElementById('login-form');
+    const pwdInput = document.getElementById('password');
+    const btnSubmit = document.getElementById('btn-submit');
+    const errBox = document.getElementById('error-message');
+    const btnToggle = document.getElementById('btn-toggle-pwd');
+
+    // Toggle ver contraseña
+    btnToggle.addEventListener('click', () => {
+      const isPwd = pwdInput.type === 'password';
+      pwdInput.type = isPwd ? 'text' : 'password';
+      btnToggle.textContent = isPwd ? '🙈' : '👁️';
+    });
+
+    // Si ya tiene token válido, verificar y pasar directo al panel sin pedir clave
+    const token = localStorage.getItem(KEY);
+    if (token) {
+      fetch('/api/auth/check', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            window.location.replace('/admin');
+          }
+        })
+        .catch(() => {});
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = pwdInput.value.trim();
+      if (!password) return;
+
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<span>Verificando credenciales...</span> ⏳';
+      errBox.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+
+        if (data.success && data.token) {
+          localStorage.setItem(KEY, data.token);
+          // Redirigir limpiamente sin dejar rastro de loop en historial
+          window.location.replace('/admin');
+        } else {
+          errBox.textContent = data.error || 'Contraseña incorrecta';
+          errBox.style.display = 'block';
+          pwdInput.value = '';
+          pwdInput.focus();
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = '<span>Ingresar al Panel de Control</span> ➔';
+        }
+      } catch (err) {
+        errBox.textContent = 'Error de conexión con el servidor.';
+        errBox.style.display = 'block';
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<span>Ingresar al Panel de Control</span> ➔';
+      }
+    });
+  </script>
+</body>
+</html>

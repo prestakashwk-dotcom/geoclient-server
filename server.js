@@ -476,6 +476,41 @@ app.post('/api/gps-alert', (req, res) => {
   res.json({ success: true, message: 'Alerta procesada' });
 });
 
+/* -------------------------- Rutas de Navegación Limpia (SaaS Multi-Usuario) ------------------------- */
+// Portal Corporativo Institucional (Página Principal de Confianza)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Panel de Administración Central (URL limpia)
+app.get(['/admin', '/dashboard', '/panel'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// Portal de Autenticación de Administrador
+app.get(['/login', '/acceso', '/auth'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Portal de Vinculación y Telemetría del Cliente (URL limpia)
+app.get(['/cliente', '/rastreo', '/tracking', '/app'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'client.html'));
+});
+
+// Centro Oficial de Descargas (URL limpia)
+app.get(['/descargar', '/descargas', '/instalador'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'descargar.html'));
+});
+
+// Redirecciones 301 automáticas para eliminar archivos .html de la barra de direcciones
+app.get('/admin.html', (req, res) => res.redirect(301, '/admin'));
+app.get('/client.html', (req, res) => {
+  const q = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+  res.redirect(301, '/cliente' + q);
+});
+app.get('/descargar.html', (req, res) => res.redirect(301, '/descargar'));
+app.get('/login.html', (req, res) => res.redirect(301, '/login'));
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* ---------------------------------- Rutas de admin ---------------------------------- */
@@ -484,7 +519,7 @@ app.get('/api/server-info', requireAdmin, (req, res) => {
   const baseUrl = `${proto}://${req.get('host')}`;
   res.json({
     localIp: getLocalIp(), port: PORT, baseUrl,
-    adminUrl: `${baseUrl}/admin.html`, clientUrl: `${baseUrl}/client.html`, apkUrl: `${baseUrl}/download-apk`,
+    adminUrl: `${baseUrl}/admin`, clientUrl: `${baseUrl}/cliente`, apkUrl: `${baseUrl}/descargar`,
     storage: store.kind, requireRegistered: REQUIRE_REGISTERED, historyDays: HISTORY_DAYS,
     currentTime: Date.now()
   });
