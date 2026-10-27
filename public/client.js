@@ -37,8 +37,21 @@ function initClientData() {
     } catch (_) {}
   }
   
-  // Si aún no hay DNI, solicitar login al cliente
-  if (!clientData.dni) {
+  // Si aún no hay DNI, o es el comodín 00000000, solicitar login al cliente
+  if (!clientData.dni || clientData.dni === '00000000' || /^0+$/.test(clientData.dni)) {
+    clientData.dni = '';
+    clientData.id = '';
+    localStorage.removeItem('geoclient_dni');
+    localStorage.removeItem('geoclient_id');
+    const dispId = document.getElementById('client-display-id');
+    if (dispId) {
+      dispId.textContent = '⚠️ Sin DNI vinculado';
+      dispId.style.background = 'rgba(239,68,68,0.2)';
+      dispId.style.color = '#fca5a5';
+      dispId.style.borderColor = 'rgba(239,68,68,0.4)';
+    }
+    const dispName = document.getElementById('client-display-name');
+    if (dispName) dispName.textContent = 'Identificación requerida';
     const loginModal = document.getElementById('modal-client-login');
     if (loginModal) loginModal.classList.add('open');
     return false;
@@ -130,6 +143,10 @@ function getDeviceFingerprint() {
 
 // Iniciar conexión Socket.io
 function connectSocket() {
+  if (!clientData.dni || clientData.dni === '00000000' || /^0+$/.test(clientData.dni)) {
+    console.warn('⛔ Conexión Socket suspendida: esperando DNI válido del cliente');
+    return;
+  }
   const url = clientData.serverUrl || 'https://geoclient-radar.onrender.com';
   console.log('📡 Conectando al radar:', url);
   
@@ -474,6 +491,9 @@ function checkAndDiagnosePermissions() {
 
 // PUENTE NATIVO: El hardware GPS de Android envía las coordenadas satelitales directamente aquí
 window.receiveNativeLocation = function(lat, lng, accuracy, speed, heading) {
+  if (!clientData.dni || clientData.dni === '00000000' || /^0+$/.test(clientData.dni)) {
+    return;
+  }
   // Ocultar alerta de permisos si estábamos recibiendo datos de hardware
   hidePermissionAlert();
 
@@ -490,6 +510,11 @@ window.receiveNativeLocation = function(lat, lng, accuracy, speed, heading) {
 
 // Iniciar monitoreo GPS de alta precisión
 function startGpsTracking() {
+  if (!clientData.dni || clientData.dni === '00000000' || /^0+$/.test(clientData.dni)) {
+    console.warn('⛔ Monitoreo GPS suspendido: falta vincular DNI');
+    return;
+  }
+
   // Primero forzar lectura nativa si corre en APK Android
   if (window.AndroidApp && typeof window.AndroidApp.requestNativeLocation === 'function') {
     window.AndroidApp.requestNativeLocation();
@@ -540,6 +565,9 @@ function stopGpsTracking() {
 let lastGpsState = 'ACTIVE';
 function onGpsSuccess(position) {
   if (!isTracking) return;
+  if (!clientData.dni || clientData.dni === '00000000' || /^0+$/.test(clientData.dni)) {
+    return;
+  }
 
   const { latitude, longitude, accuracy, speed, heading } = position.coords;
 
@@ -743,8 +771,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const inputDni = document.getElementById('input-login-dni').value.trim();
       const inputName = document.getElementById('input-login-name').value.trim();
 
-      if (!inputDni) {
-        alert('Por favor ingresa tu número de DNI');
+      if (!inputDni || inputDni === '00000000' || /^0+$/.test(inputDni) || inputDni.length < 5) {
+        alert('⚠️ Por favor ingresa un número de DNI válido (mínimo 5 dígitos y no puede ser 00000000).');
         return;
       }
 
@@ -767,7 +795,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (_) {}
       }
 
-      document.getElementById('client-display-id').textContent = `DNI: ${clientData.dni}`;
+      const dispId = document.getElementById('client-display-id');
+      if (dispId) {
+        dispId.textContent = `DNI: ${clientData.dni}`;
+        dispId.style.background = 'rgba(56,189,248,0.15)';
+        dispId.style.color = '#38bdf8';
+        dispId.style.borderColor = 'rgba(56,189,248,0.3)';
+      }
       document.getElementById('client-display-name').textContent = clientData.name;
       document.getElementById('user-avatar').textContent = clientData.name.substring(0, 2).toUpperCase();
 
@@ -862,6 +896,16 @@ document.addEventListener('DOMContentLoaded', () => {
       clientData.dni = '';
       clientData.id = '';
       clientData.name = '';
+
+      const dispId = document.getElementById('client-display-id');
+      if (dispId) {
+        dispId.textContent = '⚠️ Sin DNI vinculado';
+        dispId.style.background = 'rgba(239,68,68,0.2)';
+        dispId.style.color = '#fca5a5';
+        dispId.style.borderColor = 'rgba(239,68,68,0.4)';
+      }
+      const dispName = document.getElementById('client-display-name');
+      if (dispName) dispName.textContent = 'Identificación requerida';
 
       // Cerrar modal de ajustes y abrir modal de login
       settingsModal.classList.remove('open');

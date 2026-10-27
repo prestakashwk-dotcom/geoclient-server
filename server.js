@@ -319,7 +319,9 @@ function checkGeofences(client, lat, lng) {
 function processLocation(raw, forceTracking) {
   if (!raw || typeof raw !== 'object') return { ok: false, status: 400, error: 'Datos inválidos' };
   const id = String(raw.dni || raw.clientId || '').trim();
-  if (!DNI_RE.test(id)) return { ok: false, status: 400, error: 'DNI/ID inválido' };
+  if (!id || id === '00000000' || /^0+$/.test(id) || !DNI_RE.test(id)) {
+    return { ok: false, status: 400, error: 'DNI/ID inválido o no configurado' };
+  }
   const lat = Number(raw.latitude), lng = Number(raw.longitude);
   if (!validCoord(lat, lng)) return { ok: false, status: 400, error: 'Coordenadas inválidas' };
 
@@ -767,7 +769,7 @@ io.on('connection', (socket) => {
   socket.on('client:join', (data) => {
     if (!data) return;
     const id = String(data.dni || data.clientId || '').trim();
-    if (!DNI_RE.test(id)) return;
+    if (!id || id === '00000000' || /^0+$/.test(id) || !DNI_RE.test(id)) return;
     let c = clients.get(id);
     if (!c && REQUIRE_REGISTERED) { socket.emit('client:rejected', { error: 'Cliente no registrado' }); return; }
     if (!c) c = { id, dni: id, history: [] };

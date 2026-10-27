@@ -445,7 +445,7 @@ function createClientMarker(client) {
         <span>🎯 Precisión: <strong>${client.accuracy ? '±'+Math.round(client.accuracy)+'m' : 'N/A'}</strong></span>
         <span>⚡ Vel: <strong>${client.speed ? Math.round(client.speed * 3.6)+' km/h' : '0 km/h'}</strong></span>
         <span>📱 Equipo: <strong>${client.deviceModel || 'Android'}</strong></span>
-        ${client.hardwareId ? `<span>🆔 Hardware: <strong style="font-family:monospace; font-size:10px; color:#38bdf8;">${client.hardwareId}</strong></span>` : ''}
+        ${client.hardwareId ? `<span>🆔 <strong>IMEI / Serie:</strong> <code style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#38bdf8; user-select:all; background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px;">${client.hardwareId}</code></span>` : '<span>🆔 <strong>IMEI / Serie:</strong> <span style="color:#94a3b8;">No reportado</span></span>'}
         <span>📡 Estado: <strong>${client.statusMessage || (client.isOnline ? 'Conectado' : 'Desconectado')}</strong></span>
       </div>
       <div class="popup-actions" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
@@ -500,7 +500,7 @@ function updateMapMarker(client) {
         <span>🎯 Precisión: <strong>${client.accuracy ? '±'+Math.round(client.accuracy)+'m' : 'N/A'}</strong></span>
         <span>⚡ Vel: <strong>${client.speed ? Math.round(client.speed * 3.6)+' km/h' : '0 km/h'}</strong></span>
         <span>📱 Equipo: <strong>${client.deviceModel || 'Android'}</strong></span>
-        ${client.hardwareId ? `<span>🆔 Hardware: <strong style="font-family:monospace; font-size:10px; color:#38bdf8;">${client.hardwareId}</strong></span>` : ''}
+        ${client.hardwareId ? `<span>🆔 <strong>IMEI / Serie:</strong> <code style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#38bdf8; user-select:all; background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px;">${client.hardwareId}</code></span>` : '<span>🆔 <strong>IMEI / Serie:</strong> <span style="color:#94a3b8;">No reportado</span></span>'}
         <span>📡 Estado: <strong>${client.statusMessage || (client.isOnline ? 'Conectado' : 'Desconectado')}</strong></span>
       </div>
       <div class="popup-actions" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
@@ -598,7 +598,8 @@ function selectClient(clientId) {
       <strong>${client.name}</strong> [DNI: ${client.dni || client.id}] |
       Batería: <strong>${client.battery !== undefined && client.battery !== null ? Math.round(client.battery)+'%' : 'N/A'}</strong> |
       Velocidad: <strong>${client.speed ? Math.round(client.speed * 3.6)+' km/h' : '0 km/h'}</strong> |
-      Equipo: <strong>${client.deviceModel || 'Android'}</strong>
+      Equipo: <strong>${client.deviceModel || 'Android'}</strong> |
+      Serie/IMEI: <strong style="font-family:'JetBrains Mono',monospace; color:#38bdf8; user-select:all;">${client.hardwareId || 'N/A'}</strong>
     `;
   }
 
@@ -858,7 +859,9 @@ function renderClientList() {
       const matchName = (c.name || '').toLowerCase().includes(q);
       const matchPhone = (c.phone || '').toLowerCase().includes(q);
       const matchDni = (c.dni || c.id || '').toLowerCase().includes(q);
-      return matchName || matchPhone || matchDni;
+      const matchHw = (c.hardwareId || '').toLowerCase().includes(q);
+      const matchModel = (c.deviceModel || '').toLowerCase().includes(q);
+      return matchName || matchPhone || matchDni || matchHw || matchModel;
     });
   }
 
@@ -921,7 +924,16 @@ function renderClientList() {
           </div>
           <div style="font-size:11px; color:#94a3b8; margin-top:3px; display:flex; align-items:center; gap:6px;">
             <span>📱 <strong style="color:#e2e8f0;">${client.deviceModel || 'Android'}</strong></span>
-            ${client.hardwareId ? `<span style="font-size:9px; font-family:monospace; color:#38bdf8; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); padding:1px 5px; border-radius:3px;" title="Huella Única Hardware (Android ID): ${client.hardwareId}">HW: ${client.hardwareId.substring(0, 8)}...</span>` : ''}
+          </div>
+          <div style="font-size:10px; font-family:'JetBrains Mono', monospace; color:#38bdf8; background:rgba(2,132,199,0.12); border:1px solid rgba(56,189,248,0.3); padding:4px 8px; border-radius:6px; margin-top:5px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="Serie / Identificador único de hardware permanente (Sustituto oficial de IMEI en Android)">
+              🆔 <strong>IMEI / Serie:</strong> <code style="color:#f8fafc; font-weight:700; user-select:all;">${client.hardwareId || 'No reportado'}</code>
+            </span>
+            ${client.hardwareId ? `
+              <button type="button" class="btn-copy-hw" data-hw="${client.hardwareId}" title="Copiar código serie / IMEI" style="background:#0284c7; color:#ffffff; border:none; padding:2px 8px; border-radius:4px; font-size:9.5px; font-weight:700; cursor:pointer; flex-shrink:0; transition:all 0.2s;">
+                📋 Copiar
+              </button>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -1028,6 +1040,27 @@ function renderClientList() {
       e.stopPropagation();
       openNotifyModal(client.id);
     });
+
+    const copyHwBtn = card.querySelector('.btn-copy-hw');
+    if (copyHwBtn) {
+      copyHwBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const hw = copyHwBtn.dataset.hw;
+        if (hw) {
+          navigator.clipboard.writeText(hw).then(() => {
+            const oldText = copyHwBtn.innerHTML;
+            copyHwBtn.innerHTML = '✓ Copiado';
+            copyHwBtn.style.background = '#10b981';
+            setTimeout(() => {
+              copyHwBtn.innerHTML = oldText;
+              copyHwBtn.style.background = '#0284c7';
+            }, 2000);
+          }).catch(() => {
+            prompt('Copia el IMEI / Serie:', hw);
+          });
+        }
+      });
+    }
 
     const confirmBtn = card.querySelector('.btn-confirm-device');
     if (confirmBtn) {
